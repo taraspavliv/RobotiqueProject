@@ -8,7 +8,7 @@
 
 #define PRESCALER_TIM4      840        // timer frequency: 10kHz
 #define COUNTER_MAX_TIM4    1000       // timer max counter -> 100Hz
-#define PWM_WIDTH 			800        // With du PWM du timer
+#define PWM_WIDTH 			200        // With du PWM du timer
 
 void timer7_start(void)
 {
@@ -25,11 +25,26 @@ void timer7_start(void)
     TIM7->CR1 |= TIM_CR1_CEN;            // Enable timer
 }
 
+/*void timer6_start(void)
+{
+    // Enable TIM6 clock
+    RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
+
+    // Enable TIM6 interrupt vector
+    NVIC_EnableIRQ(TIM6_IRQn);
+
+    // Configure TIM6
+    TIM6->PSC = PRESCALER_TIM6 - 1;      // Note: final timer clock  = timer clock / (prescaler + 1)
+    TIM6->ARR = COUNTER_MAX_TIM6 - 1;    // Note: timer reload takes 1 cycle, thus -1
+    TIM6->DIER |= TIM_DIER_UIE;          // Enable update interrupt
+    TIM6->CR1 |= TIM_CR1_CEN;            // Enable timer
+}*/
+
 void timer4_start(void)
 {
 	// enable TIM4 clock
 	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
-	// configure TIM4
+	 // configure TIM4
 	TIM4->PSC = PRESCALER_TIM4 - 1; // Note: final timer clock = timer clock / (prescaler + 1)
 	TIM4->ARR = COUNTER_MAX_TIM4 - 1; // Note: timer reload takes 1 cycle, thus -1
 	TIM4->CCMR2=(TIM4->CCMR2 & ~(15 << 3)) | (13 << 3);           //mettre 110 dans EC3M

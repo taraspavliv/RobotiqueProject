@@ -25,7 +25,7 @@ void gpio_config_output_af_pushpull(GPIO_TypeDef *port, unsigned int pin)
 	 	port->PUPDR &= ~(3 << (pin * 2));
 
 	    // Input mode : MODERy = 10
-	    port->MODER  =(port->MODER & ~(3 << (pin * 2))) | (2 << (pin * 2));
+	    port->MODER = (port->MODER & ~(3 << (pin * 2))) | (2 << (pin * 2));
 
 	    port->AFR[1]= (port->AFR[1]&~(15 << 24)) | (2 << 24);
 }
