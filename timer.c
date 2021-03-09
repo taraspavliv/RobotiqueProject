@@ -3,8 +3,8 @@
 #include <main.h>
 
 #define TIMER_CLOCK         84000000    // APB1 clock
-#define PRESCALER_TIM7      8400        // timer frequency: 10kHz
-#define COUNTER_MAX_TIM7    10000       // timer max counter -> 1Hz
+#define PRESCALER_TIM7      840        // timer frequency: 10kHz
+#define COUNTER_MAX_TIM7    1000       // timer max counter -> 1Hz
 
 #define PRESCALER_TIM4      840        // timer frequency: 10kHz
 #define COUNTER_MAX_TIM4    1000       // timer max counter -> 100Hz
@@ -25,20 +25,20 @@ void timer7_start(void)
     TIM7->CR1 |= TIM_CR1_CEN;            // Enable timer
 }
 
-/*void timer6_start(void)
+void timer6_start(void)
 {
     // Enable TIM6 clock
     RCC->APB1ENR |= RCC_APB1ENR_TIM6EN;
 
     // Enable TIM6 interrupt vector
-    NVIC_EnableIRQ(TIM6_IRQn);
+    NVIC_EnableIRQ(TIM6_DAC_IRQn);
 
     // Configure TIM6
-    TIM6->PSC = PRESCALER_TIM6 - 1;      // Note: final timer clock  = timer clock / (prescaler + 1)
-    TIM6->ARR = COUNTER_MAX_TIM6 - 1;    // Note: timer reload takes 1 cycle, thus -1
+    TIM6->PSC = PRESCALER_TIM7 - 1;      // Note: final timer clock  = timer clock / (prescaler + 1)
+    TIM6->ARR = COUNTER_MAX_TIM7 - 1;    // Note: timer reload takes 1 cycle, thus -1
     TIM6->DIER |= TIM_DIER_UIE;          // Enable update interrupt
     TIM6->CR1 |= TIM_CR1_CEN;            // Enable timer
-}*/
+}
 
 void timer4_start(void)
 {
@@ -55,12 +55,10 @@ void timer4_start(void)
 
 }
 
-/*
-*   Commented because used for the motors
-*/
+
 
 // // Timer 7 Interrupt Service Routine
-// void TIM7_IRQHandler(void)
+//void TIM7_IRQHandler(void)
 // {
 	/*
 	*
@@ -75,9 +73,8 @@ void timer4_start(void)
 	*/
 
 //     /* do something ... */
-//     gpio_toggle(BODY_LED);
 
-//     // Clear interrupt flag
-//     TIM7->SR &= ~TIM_SR_UIF;
-//     TIM7->SR;	// Read back in order to ensure the effective IF clearing
+     // Clear interrupt flag
+    //TIM7->SR &= ~TIM_SR_UIF;
+    //TIM7->SR;	// Read back in order to ensure the effective IF clearing
 // }

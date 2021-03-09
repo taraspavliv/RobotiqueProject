@@ -27,20 +27,19 @@ int main(void)
 {
 	// Enable GPIOD and GPIOE peripheral clock
 	    //RCC->AHB1ENR    |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIODEN;
-	RCC->AHB1ENR    |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIODEN;
+	RCC->AHB1ENR    |= RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIODEN | RCC_AHB1ENR_GPIOEEN;
     SystemClock_Config();
 
-
-    timer4_start();
+    /*timer4_start();
     gpio_config_output_af_pushpull(GPIOD, 14);
     GPIO_TypeDef* port= GPIOD;
     int pin=14;
     port->MODER  =(port->MODER & ~(3 << (pin * 2))) | (2 << (pin * 2));
 
    port->AFR[1]= (port->AFR[1]&~(15 << 24)) | (2 << 24);
+   */
 
-
-
+    motor_init1();
     while (1) {
         
     }
