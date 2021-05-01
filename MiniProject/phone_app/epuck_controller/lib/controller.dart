@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:control_pad/control_pad.dart';
 import 'package:epuck_controller/BTDevice.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
@@ -14,6 +16,19 @@ class Controller extends StatefulWidget {
 }
 
 class _ControllerState extends State<Controller> {
+
+  void _sendMessage(String text) async {
+    text = text.trim();
+    if(text.length > 0){
+      try {
+        widget.device.connection.output.add(utf8.encode(text));
+        await widget.device.connection.output.allSent;
+      } catch (e) {
+        print("error");
+      }
+    }
+  }
+
   @override
   dispose(){
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -46,8 +61,8 @@ class _ControllerState extends State<Controller> {
                           borderRadius: BorderRadius.circular(100),
                       ),
                       onPressed: () {
-                        //TODO: send command
-                        print("${widget.device.bluedevice.name} - shoot!");
+                        _sendMessage('h');
+                        //print("${widget.device.bluedevice.name} - shoot!");
                       },
                       child: Text("Shoot!",
                           style: TextStyle(fontSize:30.0)),
@@ -62,8 +77,8 @@ class _ControllerState extends State<Controller> {
             Expanded(
               child: JoystickView(
                 onDirectionChanged: (double degrees, double distance) {
-                  //TODO: send commands
-                  print('$degrees $distance');
+                  _sendMessage('a:${degrees.toStringAsFixed(0)} d:${(distance*100).toStringAsFixed(0)} ');
+                  //print('$degrees $distance');
                 },
                 showArrows: false,
                 innerCircleColor: Colors.grey[500],

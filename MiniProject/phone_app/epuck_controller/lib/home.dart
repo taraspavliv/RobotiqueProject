@@ -47,16 +47,26 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   void initState(){
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _getBTState();
+    //_getBTState();
     _stateChangeListener();
-    _listBondedDevices();
+    //_listBondedDevices();
 
     _isDiscovering = widget.checkAvailability;
 
     if (_isDiscovering) {
       _startDiscovery();
     }
+  }
 
+  void _restartDiscovery(){
+    setState(() {
+      _isDiscovering = true;
+    });
+
+    _startDiscovery();
+  }
+
+  void _startDiscovery(){
     // Setup a list of the bonded devices
     FlutterBluetoothSerial.instance
         .getBondedDevices()
@@ -73,17 +83,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
         ).toList();
       });
     });
-  }
 
-  void _restartDiscovery(){
-    setState(() {
-      _isDiscovering = true;
-    });
-
-    _startDiscovery();
-  }
-
-  void _startDiscovery(){
      _discoveryStreamSubscription =
         FlutterBluetoothSerial.instance.startDiscovery().listen((r) {
           setState(() {
@@ -94,10 +94,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
                 _device.availability = _DeviceAvailability.yes;
                 _device.rssi = r.rssi;
                 BTdevices.add(BTDevice(r.device));
-                setState(() {});
               }
             }
           });
+          setState(() {});
         });
 
     _discoveryStreamSubscription.onDone(() {
@@ -115,15 +115,15 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   }
 
   //@override
-  void didChangeAppLifeCycleState(AppLifecycleState state) {
+  /*void didChangeAppLifeCycleState(AppLifecycleState state) {
     if(state.index == 0){
       if(_bluetoothState.isEnabled){
         _listBondedDevices();
       }
     }
-  }
+  }*/
 
-  _getBTState(){
+  /*_getBTState(){
     FlutterBluetoothSerial.instance.state.then((state){
       _bluetoothState = state;
       if(_bluetoothState.isEnabled){
@@ -131,14 +131,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
       }
       setState(() {});
     });
-  }
+  }*/
 
   _stateChangeListener() {
     FlutterBluetoothSerial.instance.onStateChanged().listen((BluetoothState state) {
       _bluetoothState = state;
-      if(_bluetoothState.isEnabled){
-        _listBondedDevices();
-      }else{
+      if(_bluetoothState.isEnabled == false){
         devices.clear();
       }
       print("State enabled? ${state.isEnabled}");
@@ -146,13 +144,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
     });
   }
 
-  _listBondedDevices(){
+  /*_listBondedDevices(){
     FlutterBluetoothSerial.instance.getBondedDevices().then((List<BluetoothDevice> bondedDevices){
       devices = bondedDevices;
       setState(() {});
 
     });
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -178,13 +176,15 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
           backgroundColor: Colors.lightGreen,
           onPressed: (){
             BTdevices.clear();
+            AVdevices.clear();
             setState(() {});
+            _restartDiscovery();
             for(int i=0; i < AVdevices.length; ++i){
               AVdevices[i].availability =_DeviceAvailability.maybe;
               setState(() {});
             }
 
-            _listBondedDevices();
+            //_listBondedDevices();
             if(_bluetoothState.isEnabled){
               print("bluetooth enabled");
 
