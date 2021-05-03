@@ -22,6 +22,8 @@
 
 #include <process_image.h>
 
+#define PI 3.14159265
+
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -32,6 +34,109 @@ static void serial_start(void)
 	};
 
 	sdStart(&SD3, &ser_cfg); // UART3.
+}
+
+bool is_number(char chara){
+    if((int)chara >= 48 && (int)chara <= 57){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+void ReceiveCommand(BaseSequentialStream* in){
+	volatile char incoming_message[16];
+
+	if(chSequentialStreamRead((BaseSequentialStream*) in,(uint8_t *) &incoming_message, 15) == 0){
+		return;
+	}
+	incoming_message[15] = '\0';
+	float angle=0;
+	uint16_t distance=0;
+
+	for(int i=0;incoming_message[i] != '\0';++i){
+		if(incoming_message[i]=='a' || incoming_message[i]=='d'){
+			if(incoming_message[i+1]==':'){
+			uint16_t k = 0;
+				for(int j=0;j<3;++j){
+					if(is_number(incoming_message[i+2+j])){
+						k+=(int)incoming_message[i+2+j]-48;
+						//printf("%c",incoming_text[i+2+j]);
+					}else{
+						break;
+					}
+					k *= 10;
+				}
+				k /= 10;
+				if(incoming_message[i]=='a'){
+					angle = k;
+				}else{
+					distance = k;
+				}
+			}
+		}
+	}
+	set_led(2,2);
+
+        //State machine to detect the string EOF\0S in order synchronize
+        //with the frame received
+        /*switch(state){
+        	case 0:{
+        		if(c1 == 'a')
+        			state = 1;
+        		else
+        			state = 0;
+        		break;
+        		}
+        	case 1:{
+        		if(c1 == ':')
+        			state = 2;
+        		else if(c1 == 'd')
+        			state = 1;
+        		else
+        			state = 0;
+        		break;
+        	}
+        }
+
+	uint16_t angle = 0;
+	c1 = chSequentialStreamGet(in);
+	if(is_number(c1)){
+		angle+=(uint8_t)c1-48;
+		c1 = chSequentialStreamGet(in);
+		if(is_number(c1)){
+			angle*=10;
+			angle+=(uint8_t)c1-48;
+			if(is_number(c1)){
+				angle*=10;
+				angle+=(uint8_t)c1-48;
+			}
+		}
+	}
+
+	c1 = chSequentialStreamGet(in);
+	c1 = chSequentialStreamGet(in);
+	c1 = chSequentialStreamGet(in);
+
+	uint8_t distance = 0;
+	c1 = chSequentialStreamGet(in);
+	if(is_number(c1)){
+		distance+=(uint8_t)c1-48;
+		c1 = chSequentialStreamGet(in);
+		if(is_number(c1)){
+			distance*=10;
+			distance+=(uint8_t)c1-48;
+			if(is_number(c1)){
+				distance*=10;
+				distance+=(uint8_t)c1-48;
+			}
+		}
+	}*/
+    // Converting to radian
+    angle = (angle * PI) / 180;
+	left_motor_set_speed(9*distance*(cos(angle)+sin(angle)));
+	right_motor_set_speed(9*distance*(cos(angle)-sin(angle)));
+
 }
 
 int main(void)
@@ -63,7 +168,8 @@ int main(void)
 
     /* Infinite loop. */
     while (1) {
-        chThdSleepMilliseconds(1000);
+        chThdSleepMilliseconds(50);
+        //ReceiveCommand((BaseSequentialStream *) &SD3);
     }
 }
 

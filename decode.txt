@@ -1,0 +1,29 @@
+
+char incoming_text[] = "a:256 d:29a:153 d:67a:256 d:29a:15 d:67ha:2 d:29a:153 d:67";
+
+bool is_number(char chara){
+    if((int)chara >= 48 && (int)chara <= 57){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+for(int i=0;incoming_text[i] != '\0';++i){
+	if(incoming_text[i]=='a'){
+	    if(incoming_text[i+1]==':'){
+		int k = 0;
+		for(int j=0;j<3;++j){
+		    if(is_number(incoming_text[i+2+j])){
+		        k+=(int)incoming_text[i+2+j]-48;
+		        //printf("%c",incoming_text[i+2+j]);
+		    }else{
+		        break;
+		    }
+		    k *= 10;
+		}
+		k /= 10;
+		printf("%d ", k);
+	    }
+	}
+}

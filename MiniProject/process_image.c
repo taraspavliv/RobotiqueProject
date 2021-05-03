@@ -23,8 +23,11 @@ static THD_FUNCTION(CaptureImage, arg) {
 	//Takes pixels 0 to IMAGE_BUFFER_SIZE of the line 10 + 11 (minimum 2 lines because reasons)
     //po8030_set_ae(1);
     //po8030_set_awb(1);
-    //po8030_config(FORMAT_RGB565, SIZE_QQVGA);
-	po8030_advanced_config(FORMAT_RGB565, 0, PO8030_MAX_HEIGHT/2 - LINES_TO_ANALYSE/2, PO8030_MAX_WIDTH, LINES_TO_ANALYSE, SUBSAMPLING_X1, SUBSAMPLING_X1);
+    po8030_advanced_config(FORMAT_RGB565, 0, PO8030_MAX_HEIGHT/2 - LINES_TO_ANALYSE/2, PO8030_MAX_WIDTH, LINES_TO_ANALYSE<2?2:LINES_TO_ANALYSE, SUBSAMPLING_X1, SUBSAMPLING_X1);
+    //po8030_config(FORMAT_RGB565, SIZE_QVGA);
+    po8030_set_contrast(10);
+    po8030_set_ae(0);
+    po8030_set_awb(1);
 	dcmi_enable_double_buffering();
 	dcmi_set_capture_mode(CAPTURE_ONE_SHOT);
 	dcmi_prepare();
@@ -32,7 +35,7 @@ static THD_FUNCTION(CaptureImage, arg) {
 	//set_led(3,1);
 	//systime_t time = 0;
     while(1){
-		//set_led(3,2);
+		set_led(3,2);
 		//chprintf((BaseSequentialStream *)&SD3, "time: %d", chVTGetSystemTime()-time);
 		//time = chVTGetSystemTime();
         //starts a capture
@@ -52,7 +55,7 @@ static THD_FUNCTION(ProcessImage, arg) {
     (void)arg;
 
 	uint8_t *img_buff_ptr;
-	uint8_t main_lines[PO8030_MAX_WIDTH][RGB_nb] = {0};
+	uint16_t main_lines[PO8030_MAX_WIDTH][RGB_nb] = {0};
 
 	set_led(1, 0);
 	bool ball_seen;
@@ -62,7 +65,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
     while(1){
     	//waits until an image has been captured
-        chBSemWait(&image_ready_sem);
+        //chBSemWait(&image_ready_sem);
 		//gets the pointer to the array filled with the last image in RGB565    
 		img_buff_ptr = dcmi_get_last_image_ptr();
 
@@ -74,14 +77,15 @@ static THD_FUNCTION(ProcessImage, arg) {
 			main_lines[i][0] = 0;
 			main_lines[i][1] = 0;
 			main_lines[i][2] = 0;
-			for(uint8_t j=0; j< LINES_TO_ANALYSE;++j){
+			//for(uint8_t j=0; j< LINES_TO_ANALYSE;++j){
+			int j = 2;
 				main_lines[i][0] += (img_buff_ptr[2*i + 2*j*PO8030_MAX_WIDTH]>>3)&0x1F;
 				main_lines[i][1] += ((img_buff_ptr[2*i + 2*j*PO8030_MAX_WIDTH]<<3) + (img_buff_ptr[2*i + 1 + 2*j*PO8030_MAX_WIDTH]>>5))&0x3F;
-				main_lines[i][2] += img_buff_ptr[2*i + 1 + 2*j*PO8030_MAX_WIDTH]&0x1F;
-			}
-			main_lines[i][0] /= 3;
-			main_lines[i][1] /= 3;
-			main_lines[i][2] /= 3;
+				main_lines[i][2] += (img_buff_ptr[2*i + 1 + 2*j*PO8030_MAX_WIDTH])&0x1F;
+			//}
+			/*main_lines[i][0] /= LINES_TO_ANALYSE;
+			main_lines[i][1] /= LINES_TO_ANALYSE;
+			main_lines[i][2] /= LINES_TO_ANALYSE;*/
 			if(i >= 2 && is_orange(main_lines[i]) && is_orange(main_lines[i-1]) && is_orange(main_lines[i-2])){
 				if(ball_seen == false){
 					ball_seen = true;
@@ -98,27 +102,27 @@ static THD_FUNCTION(ProcessImage, arg) {
 			ball_center = (right_ball_side + left_ball_side)/2;
 		}
 
-		/*chprintf((BaseSequentialStream *)&SD3, "R: %d ", main_lines[320][0]);
+		chprintf((BaseSequentialStream *)&SD3, "R: %d ", main_lines[320][0]);
 		chprintf((BaseSequentialStream *)&SD3, "G: %d ", main_lines[320][1]);
-		chprintf((BaseSequentialStream *)&SD3, "B: %d \n\r", main_lines[320][2]);*/
+		chprintf((BaseSequentialStream *)&SD3, "B: %d \n\r", main_lines[320][2]);
 
 		if(ball_seen){
 			set_led(2,1);
-			/*chprintf((BaseSequentialStream *)&SD3, "R: %d ", left_ball_side);
-			chprintf((BaseSequentialStream *)&SD3, "L: %d \n\r", right_ball_side);*/
+			//chprintf((BaseSequentialStream *)&SD3, "C: %d ", ball_center);
+			//chprintf((BaseSequentialStream *)&SD3, "W: %d \n\r", right_ball_side - left_ball_side);
 			if(ball_center>320){
-				left_motor_set_speed(200);
-				right_motor_set_speed(-200);
+				left_motor_set_speed(300);
+				right_motor_set_speed(-300);
 			}else{
-				left_motor_set_speed(-200);
-				right_motor_set_speed(200);
+				left_motor_set_speed(-300);
+				right_motor_set_speed(300);
 			}
 		}else{
 			set_led(2,0);
 			left_motor_set_speed(0);
 			right_motor_set_speed(0);
 		}
-
+        //ReceiveCommand((BaseSequentialStream *) &SD3);
 		//set_led(1, 2);
 
     }
@@ -132,8 +136,9 @@ bool is_green(uint8_t* pixel){
 	}
 }
 
-bool is_orange(uint8_t* pixel){
-	if(pixel[0] <= pixel[1] + 6 && pixel[0] + 6 >= pixel[1] && pixel[0] >= pixel[2]*2-1){
+bool is_orange(uint16_t* pixel){
+	//TODO:check if pixel[0] can be set to 4-5
+	if(pixel[0] >= 4 && pixel[1] + pixel[2] <= 1 + pixel[0]/6){
 		return true;
 	}else{
 		return false;

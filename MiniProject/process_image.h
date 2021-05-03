@@ -9,6 +9,6 @@
 
 void process_image_start(void);
 bool is_green(uint8_t* pixel);
-bool is_orange(uint8_t* pixel);
+bool is_orange(uint16_t* pixel);
 
 #endif /* PROCESS_IMAGE_H */
