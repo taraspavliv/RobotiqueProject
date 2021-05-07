@@ -47,21 +47,20 @@ bool is_number(char chara){
 void ReceiveCommand(BaseSequentialStream* in){
 	volatile char incoming_message[16];
 
-	if(chSequentialStreamRead((BaseSequentialStream*) in,(uint8_t *) &incoming_message, 15) == 0){
+	if(chSequentialStreamRead((BaseSequentialStream*) in,(uint8_t *) &incoming_message, 16) == 0){
 		return;
 	}
 	incoming_message[15] = '\0';
 	float angle=0;
 	uint16_t distance=0;
 
-	for(int i=0;incoming_message[i] != '\0';++i){
+    for(int i=0;incoming_message[i] != '\0';++i){
 		if(incoming_message[i]=='a' || incoming_message[i]=='d'){
 			if(incoming_message[i+1]==':'){
 			uint16_t k = 0;
 				for(int j=0;j<3;++j){
 					if(is_number(incoming_message[i+2+j])){
-						k+=(int)incoming_message[i+2+j]-48;
-						//printf("%c",incoming_text[i+2+j]);
+						k+=(int)incoming_message[i+2+j]-(int)'0';
 					}else{
 						break;
 					}
@@ -70,13 +69,12 @@ void ReceiveCommand(BaseSequentialStream* in){
 				k /= 10;
 				if(incoming_message[i]=='a'){
 					angle = k;
-				}else{
+				}else if(incoming_message[i]=='d'){
 					distance = k;
 				}
 			}
 		}
-	}
-	set_led(2,2);
+    }
 
         //State machine to detect the string EOF\0S in order synchronize
         //with the frame received
@@ -134,8 +132,19 @@ void ReceiveCommand(BaseSequentialStream* in){
 	}*/
     // Converting to radian
     angle = (angle * PI) / 180;
-	left_motor_set_speed(9*distance*(cos(angle)+sin(angle)));
-	right_motor_set_speed(9*distance*(cos(angle)-sin(angle)));
+	//left_motor_set_speed(8*distance*(cos(angle)+sin(angle)));
+	//right_motor_set_speed(8*distance*(cos(angle)-sin(angle)));
+	//chprintf((BaseSequentialStream *)&SDU1, "L:%d R:%d \r\n", (int)(8*distance*(cos(angle)+sin(angle))), (int)(8*distance*(cos(angle)-sin(angle))));
+	//chprintf((BaseSequentialStream *)&SDU1, "A:%f D:%d \r\n", angle, distance);
+    if((int)(8*distance*(cos(angle)+sin(angle))) > 0 && (int)(8*distance*(cos(angle)-sin(angle))) > 0){
+    	set_led(0,2);
+    }else if((int)(8*distance*(cos(angle)+sin(angle))) < 0 && (int)(8*distance*(cos(angle)-sin(angle))) > 0){
+    	set_led(1,2);
+    }else if((int)(8*distance*(cos(angle)+sin(angle))) < 0 && (int)(8*distance*(cos(angle)-sin(angle))) < 0){
+    	set_led(2,2);
+    }else if((int)(8*distance*(cos(angle)+sin(angle))) > 0 && (int)(8*distance*(cos(angle)-sin(angle))) < 0){
+    	set_led(3,2);
+    }
 
 }
 
@@ -166,10 +175,11 @@ int main(void)
 	//stars the threads for the processing of the image
 	process_image_start();
 
+	set_rgb_led(1,0,200,200);
     /* Infinite loop. */
     while (1) {
-        chThdSleepMilliseconds(50);
-        //ReceiveCommand((BaseSequentialStream *) &SD3);
+        chThdSleepMilliseconds(100);
+        ReceiveCommand((BaseSequentialStream *) &SD3);
     }
 }
 

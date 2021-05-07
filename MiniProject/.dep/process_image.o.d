@@ -138,6 +138,7 @@ build/obj/process_image.o: process_image.c \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/alloca.h \
  ../../lib/e-puck2_main-processor/src/camera/po8030.h \
  ../../lib/e-puck2_main-processor/src/leds.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h \
  ../../lib/e-puck2_main-processor/src/motors.h process_image.h
 
 ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/ch.h:
@@ -421,6 +422,8 @@ main.h:
 ../../lib/e-puck2_main-processor/src/camera/po8030.h:
 
 ../../lib/e-puck2_main-processor/src/leds.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h:
 
 ../../lib/e-puck2_main-processor/src/motors.h:
 
