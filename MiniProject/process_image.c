@@ -4,41 +4,31 @@
 #include <usbcfg.h>
 
 #include <main.h>
-#include "camera/po8030.h"
+#include <camera/po8030.h>
 #include <leds.h> //no RGB leds included here
 #include <math.h>
 #include <motors.h>
 
 #include <process_image.h>
 
-
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 
-static THD_WORKING_AREA(waCaptureImage, 4096);
+static THD_WORKING_AREA(waCaptureImage,256);
 static THD_FUNCTION(CaptureImage, arg) {
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
 
-	//Takes pixels 0 to IMAGE_BUFFER_SIZE of the line 10 + 11 (minimum 2 lines because reasons)
-    //po8030_set_ae(1);
-    //po8030_set_awb(1);
     po8030_advanced_config(FORMAT_RGB565, 0, PO8030_MAX_HEIGHT/2 - LINES_TO_ANALYSE/2, PO8030_MAX_WIDTH, LINES_TO_ANALYSE<2?2:LINES_TO_ANALYSE, SUBSAMPLING_X1, SUBSAMPLING_X1);
-    //po8030_config(FORMAT_RGB565, SIZE_QVGA);
-    po8030_set_contrast(15);
+    po8030_set_contrast(100);
     po8030_set_ae(0);
-    po8030_set_awb(1);
+    po8030_set_awb(0);
 	dcmi_enable_double_buffering();
 	dcmi_set_capture_mode(CAPTURE_ONE_SHOT);
 	dcmi_prepare();
 
-	//set_led(3,1);
-	//systime_t time = 0;
-    while(1){
-		//set_led(3,2);
-		//chprintf((BaseSequentialStream *)&SD3, "time: %d", chVTGetSystemTime()-time);
-		//time = chVTGetSystemTime();
+    while(true){
         //starts a capture
 		dcmi_capture_start();
 		//waits for the capture to be done
@@ -57,8 +47,9 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 	uint8_t *img_buff_ptr;
 	static uint16_t main_lines[PO8030_MAX_WIDTH][RGB_nb] = {0};
+	static uint8_t main_lines_averaged[PO8030_MAX_WIDTH] = {0};
 
-	bool ball_seen;
+	bool ball_seen = false;
 	uint16_t right_ball_side=0;
 	uint16_t left_ball_side=0;
 	uint16_t ball_center=0;
@@ -70,7 +61,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
 
-    while(1){
+    while(true){
     	//waits until an image has been captured
         //chBSemWait(&image_ready_sem);
 		//gets the pointer to the array filled with the last image in RGB565    
@@ -84,22 +75,31 @@ static THD_FUNCTION(ProcessImage, arg) {
 			main_lines[i][0] = 0;
 			main_lines[i][1] = 0;
 			main_lines[i][2] = 0;
-			//for(uint8_t j=0; j< LINES_TO_ANALYSE;++j){
-			int j = 0;
+			for(uint8_t j=0; j< LINES_TO_ANALYSE;++j){
 				main_lines[i][0] += (img_buff_ptr[2*i + 2*j*PO8030_MAX_WIDTH]>>3)&0x1F;
 				main_lines[i][1] += ((img_buff_ptr[2*i + 2*j*PO8030_MAX_WIDTH]<<3) + (img_buff_ptr[2*i + 1 + 2*j*PO8030_MAX_WIDTH]>>5))&0x3F;
 				main_lines[i][2] += (img_buff_ptr[2*i + 1 + 2*j*PO8030_MAX_WIDTH])&0x1F;
-			//}
-			/*main_lines[i][0] /= LINES_TO_ANALYSE;
+			}
+			main_lines[i][0] /= LINES_TO_ANALYSE;
 			main_lines[i][1] /= LINES_TO_ANALYSE;
-			main_lines[i][2] /= LINES_TO_ANALYSE;*/
-			if(i >= 2 && is_orange(main_lines[i]) && is_orange(main_lines[i-1]) && is_orange(main_lines[i-2])){
-				if(ball_seen == false){
-					ball_seen = true;
-					left_ball_side = i;
-				}else{
-					right_ball_side = i;
-				}
+			main_lines[i][2] /= LINES_TO_ANALYSE;
+		}
+
+		for(uint16_t i=0; i < PO8030_MAX_WIDTH; ++i){
+			main_lines_averaged[i] = (main_lines[i][0]*main_lines[i][0] + main_lines[i][1]*main_lines[i][1] + main_lines[i][2]*main_lines[i][2])/24;
+		}
+
+		for(uint16_t i=1; i < PO8030_MAX_WIDTH-1; ++i){
+			main_lines_averaged[i] = (main_lines_averaged[i-1] + main_lines_averaged[i] + main_lines_averaged[i+1])/3;
+		}
+
+		for(uint16_t i=1; i < PO8030_MAX_WIDTH-1; ++i){
+			main_lines_averaged[i] = (main_lines_averaged[i-1] + main_lines_averaged[i] + main_lines_averaged[i+1])/3;
+			if(main_lines_averaged[i+1] - main_lines_averaged[i-1] < 5 && ball_seen == false){
+				ball_seen = true;
+				left_ball_side = i;
+			}else if(main_lines_averaged[i+1] - main_lines_averaged[i-1] > 5 && ball_seen == true){
+				right_ball_side = i;
 			}
 		}
 
@@ -109,58 +109,15 @@ static THD_FUNCTION(ProcessImage, arg) {
 			ball_center = (right_ball_side + left_ball_side)/2;
 		}
 
-		/*chprintf((BaseSequentialStream *)&SD3, "R: %d ", main_lines[320][0]);
-		chprintf((BaseSequentialStream *)&SD3, "G: %d ", main_lines[320][1]);
-		chprintf((BaseSequentialStream *)&SD3, "B: %d \n\r", main_lines[320][2]);*/
-
-		//chprintf((BaseSequentialStream *)&SD3, "D: %c", 'c');
-
 		/*if(ball_seen){
-			set_led(2,1);
-			//chprintf((BaseSequentialStream *)&SD3, "C: %d ", ball_center);
-			//chprintf((BaseSequentialStream *)&SD3, "W: %d \n\r", right_ball_side - left_ball_side);
-			distance_to_ball = 37.47/(2*tan(3.141592*(right_ball_side - left_ball_side)/5120));
-			//chprintf((BaseSequentialStream *)&SD3, "D: %f", distance_to_ball);
-			if(ball_center>340){
-				left_motor_set_speed(100);
-				right_motor_set_speed(-100);
-			}else if(ball_center<300){
-				left_motor_set_speed(-100);
-				right_motor_set_speed(100);
-			}else{
-				left_motor_set_speed(50);
-				right_motor_set_speed(50);
-			}
+			set_led(0,1);
 		}else{
-			set_led(2,0);
-			left_motor_set_speed(0);
-			right_motor_set_speed(0);
+			set_led(0,0);
 		}*/
-        //ReceiveCommand((BaseSequentialStream *) &SD3);
-		//set_led(1, 2);
-
-
-
 
     }
 }
 
-bool is_green(uint8_t* pixel){
-	if(pixel[1] > pixel[0]*2 + 2 && pixel[1] > pixel[2]*2 - 1 && pixel[1] > 10){
-		return true;
-	}else{
-		return false;
-	}
-}
-
-bool is_orange(uint16_t* pixel){
-	//TODO:check if pixel[0] can be set to 4-5
-	if(pixel[0] >= 4 && pixel[1] + pixel[2] <= 1 + pixel[0]/6){
-		return true;
-	}else{
-		return false;
-	}
-}
 
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);

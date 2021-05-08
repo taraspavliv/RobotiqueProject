@@ -77,7 +77,6 @@ build/obj/main.o: main.c \
  ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/chdynamic.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/chqueues.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/chstreams.h \
- ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/include/hal.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/osal/rt/osal.h \
  halconf.h mcuconf.h \
@@ -144,11 +143,14 @@ build/obj/main.o: main.c \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/unistd.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/unistd.h \
  ../../lib/e-puck2_main-processor/src/parameter/parameter.h \
- ../../lib/e-puck2_main-processor/src/camera/po8030.h \
  ../../lib/e-puck2_main-processor/src/motors.h \
+ ../../lib/e-puck2_main-processor/src/camera/po8030.h \
+ ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h \
  ../../lib/e-puck2_main-processor/src/leds.h \
  ../../lib/e-puck2_main-processor/src/spi_comm.h \
- ../../lib/e-puck2_main-processor/src/selector.h process_image.h
+ ../../lib/e-puck2_main-processor/src/selector.h role_selector.h \
+ process_image.h bt_communication.h position_motion_controller.h \
+ position_calibrator.h
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/stdio.h:
 
@@ -306,8 +308,6 @@ chconf.h:
 
 ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/chstreams.h:
 
-../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h:
-
 ../../lib/e-puck2_main-processor/ChibiOS//os/hal/include/hal.h:
 
 ../../lib/e-puck2_main-processor/ChibiOS//os/hal/osal/rt/osal.h:
@@ -444,9 +444,11 @@ main.h:
 
 ../../lib/e-puck2_main-processor/src/parameter/parameter.h:
 
+../../lib/e-puck2_main-processor/src/motors.h:
+
 ../../lib/e-puck2_main-processor/src/camera/po8030.h:
 
-../../lib/e-puck2_main-processor/src/motors.h:
+../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h:
 
 ../../lib/e-puck2_main-processor/src/leds.h:
 
@@ -454,4 +456,12 @@ main.h:
 
 ../../lib/e-puck2_main-processor/src/selector.h:
 
+role_selector.h:
+
 process_image.h:
+
+bt_communication.h:
+
+position_motion_controller.h:
+
+position_calibrator.h:

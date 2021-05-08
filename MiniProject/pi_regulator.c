@@ -1,6 +1,5 @@
 #include "ch.h"
 #include "hal.h"
-#include <math.h>
 #include <usbcfg.h>
 #include <chprintf.h>
 #include <stdio.h>
@@ -8,7 +7,7 @@
 
 #include <main.h>
 #include <motors.h>
-#include <Pi_regulator.h>
+#include <pi_regulator.h>
 #include <process_image.h> // add the absolute position of the ball
 // add #include <process_position.h> witch gives the absolute position of the e-puck and of the goal
 
@@ -170,14 +169,14 @@ void pi_regulator_start(void){
 //verifies if the epuck is alligned behind the ball
 int robot_centered(uint16_t final_angle){
 
-uint16_t optimal_angle=0;
-optimal_angle=(get_y_goal()-get_y_robot())/(get_x_goal()-get_x_robot()+1);
-//chprintf((BaseSequentialStream *)&SDU1, "optimal=%dus\n", optimal_angle);
-//chprintf((BaseSequentialStream *)&SDU1, "final_angle=%dus\n", final_angle);
+	uint16_t optimal_angle=0;
+	optimal_angle=(get_y_goal()-get_y_robot())/(get_x_goal()-get_x_robot()+1);
+	//chprintf((BaseSequentialStream *)&SDU1, "optimal=%dus\n", optimal_angle);
+	//chprintf((BaseSequentialStream *)&SDU1, "final_angle=%dus\n", final_angle);
 
-if(test==1){
-	optimal_angle=final_angle;
-}
+	if(test==1){
+		optimal_angle=final_angle;
+	}
 
 	 if (abs(final_angle-optimal_angle)<5) {
 	        	return 1;
