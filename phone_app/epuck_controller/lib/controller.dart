@@ -17,18 +17,6 @@ class Controller extends StatefulWidget {
 
 class _ControllerState extends State<Controller> {
 
-  void _sendMessage(String text) async {
-    text = text.trim();
-    if(text.length > 0){
-      try {
-        widget.device.connection.output.add(utf8.encode(text));
-        await widget.device.connection.output.allSent;
-      } catch (e) {
-        print("error");
-      }
-    }
-  }
-
   @override
   dispose(){
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -42,7 +30,7 @@ class _ControllerState extends State<Controller> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.lightGreen,
+        backgroundColor: Colors.lightBlueAccent[100],
       ),
       body: SafeArea(
         child: Row(
@@ -61,7 +49,7 @@ class _ControllerState extends State<Controller> {
                           borderRadius: BorderRadius.circular(100),
                       ),
                       onPressed: () {
-                        _sendMessage('h');
+                        widget.device.ctrlHit = true;
                         //print("${widget.device.bluedevice.name} - shoot!");
                       },
                       child: Text("Shoot!",
@@ -77,7 +65,8 @@ class _ControllerState extends State<Controller> {
             Expanded(
               child: JoystickView(
                 onDirectionChanged: (double degrees, double distance) {
-                  _sendMessage('a:${degrees.toStringAsFixed(0)} d:${(distance*100).toStringAsFixed(0)} ');
+                  widget.device.ctrlAngle = int.parse(degrees.toStringAsFixed(0));
+                  widget.device.ctrlDist = int.parse((distance*100).toStringAsFixed(0));
                   //print('$degrees $distance');
                 },
                 showArrows: false,

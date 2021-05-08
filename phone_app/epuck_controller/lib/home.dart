@@ -47,7 +47,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   void initState(){
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    //_getBTState();
+    _getBTState();
     _stateChangeListener();
     //_listBondedDevices();
 
@@ -103,6 +103,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
     _discoveryStreamSubscription.onDone(() {
       setState(() {
         _isDiscovering = false;
+        setState(() {});
       });
     });
   }
@@ -123,15 +124,15 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
     }
   }*/
 
-  /*_getBTState(){
+  _getBTState(){
     FlutterBluetoothSerial.instance.state.then((state){
       _bluetoothState = state;
-      if(_bluetoothState.isEnabled){
+      /*if(_bluetoothState.isEnabled){
         _listBondedDevices();
-      }
+      }*/
       setState(() {});
     });
-  }*/
+  }
 
   _stateChangeListener() {
     FlutterBluetoothSerial.instance.onStateChanged().listen((BluetoothState state) {
@@ -139,8 +140,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
       if(_bluetoothState.isEnabled == false){
         devices.clear();
       }
-      print("State enabled? ${state.isEnabled}");
-      setState(() {});
+      setState(() {
+        print("State enabled? ${state.isEnabled}");
+      });
     });
   }
 
@@ -157,9 +159,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     return Scaffold(
       appBar: AppBar(
-        title: Text('E-puck  Football  Tool', style: TextStyle(color: Colors.black,)),
+        title: Text(_isDiscovering ? 'Looking...' :'E-puck  Football  Tool', style: TextStyle(color: Colors.black,)),
         centerTitle: true,
-        backgroundColor: Colors.lightGreen,
+        backgroundColor: Colors.lightBlueAccent[100],
       ),
       body: ListView(
         children: BTdevices.map((device) =>  DeviceCard(device)).toList(),
@@ -173,28 +175,24 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
             color: Colors.black,
             size: 30.0,
           ),
-          backgroundColor: Colors.lightGreen,
+          backgroundColor: Colors.lightBlueAccent[100],
           onPressed: (){
             BTdevices.clear();
-            AVdevices.clear();
-            setState(() {});
-            _restartDiscovery();
             for(int i=0; i < AVdevices.length; ++i){
               AVdevices[i].availability =_DeviceAvailability.maybe;
-              setState(() {});
             }
-
-            //_listBondedDevices();
+            setState(() {});
+            _restartDiscovery();
+              //_listBondedDevices();
             if(_bluetoothState.isEnabled){
               print("bluetooth enabled");
-
-              _restartDiscovery();
               print(AVdevices.length);
               for(int i=0; i < AVdevices.length; ++i){
                 AVdevices[i].availability ==_DeviceAvailability.yes? print("${AVdevices[i].device.name}") : print("oh no");
               }
+              //create cards of devices
             }
-            //create cards of devices
+
           },
         ),
       ),

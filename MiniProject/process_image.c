@@ -11,9 +11,6 @@
 
 #include <process_image.h>
 
-#define PI 3.1417
-#define RAYON 5.3 //en cm a verifier
-#define CONVERTER PI*4.1/1000  //41mm comme diamètre de la roue
 
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
@@ -68,12 +65,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 	float distance_to_ball = 0;
 
 
-	//initialisation des variables
-	float position_x =0;
-	float position_y=0;
-	float angle=0;
-	float stepr_1=0;
-	float stepl_1=0;
+
 	//on met le compteur de la position à 0;
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
@@ -148,30 +140,9 @@ static THD_FUNCTION(ProcessImage, arg) {
 		//set_led(1, 2);
 
 
-		float l1=0; //increment de la roue right
-		float l2=0; //increment de la roue left
-		l1= (right_motor_get_pos()-stepr_1)*CONVERTER; //de step a cm
-		l2= (left_motor_get_pos()-stepl_1)*CONVERTER;
 
-		position_x= position_x+(l1+l2)*cosf(angle)/2;
-		position_y= position_y+(l1+l2)*sinf(angle)/2;
-		angle=angle+tanf((l1-l2)/RAYON);
-
-		stepr_1=right_motor_get_pos();
-		stepl_1=left_motor_get_pos();
-		//chprintf((BaseSequentialStream *)&SD3, "x: %f y: %f theta: %f \n\r", position_x, position_y, angle);
 
     }
-}
-
-void position_update(void){
-
-
-	//boucle qui actualise les valeurs et de la position
-	while(1){
-
-	}
-
 }
 
 bool is_green(uint8_t* pixel){

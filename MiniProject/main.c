@@ -23,6 +23,9 @@
 #include <process_image.h>
 
 #define PI 3.14159265
+#define RAYON 53 //en cm a verifier
+#define CONVERTER PI*41/1000  //41mm comme diamètre de la roue
+
 
 static void serial_start(void)
 {
@@ -44,6 +47,12 @@ bool is_number(char chara){
     }
 }
 
+static float position_x =0;
+static float position_y=0;
+static float my_angle=0;
+static float stepr_1=0;
+static float stepl_1=0;
+
 void ReceiveCommand(BaseSequentialStream* in){
 	volatile char incoming_message[16];
 
@@ -53,6 +62,7 @@ void ReceiveCommand(BaseSequentialStream* in){
 	incoming_message[15] = '\0';
 	float angle=0;
 	uint16_t distance=0;
+	bool discard = false;
 
     for(int i=0;incoming_message[i] != '\0';++i){
 		if(incoming_message[i]=='a' || incoming_message[i]=='d'){
@@ -61,91 +71,46 @@ void ReceiveCommand(BaseSequentialStream* in){
 				for(int j=0;j<3;++j){
 					if(is_number(incoming_message[i+2+j])){
 						k+=(int)incoming_message[i+2+j]-(int)'0';
+					}else if(incoming_message[i+2+j] == '\0'){
+						discard = true;
+						break;
 					}else{
 						break;
 					}
 					k *= 10;
 				}
 				k /= 10;
-				if(incoming_message[i]=='a'){
-					angle = k;
-				}else if(incoming_message[i]=='d'){
-					distance = k;
+				if(discard == false){
+					if(incoming_message[i]=='a'){
+						angle = k;
+					}else if(incoming_message[i]=='d'){
+						distance = k;
+					}
 				}
 			}
 		}
     }
 
-        //State machine to detect the string EOF\0S in order synchronize
-        //with the frame received
-        /*switch(state){
-        	case 0:{
-        		if(c1 == 'a')
-        			state = 1;
-        		else
-        			state = 0;
-        		break;
-        		}
-        	case 1:{
-        		if(c1 == ':')
-        			state = 2;
-        		else if(c1 == 'd')
-        			state = 1;
-        		else
-        			state = 0;
-        		break;
-        	}
-        }
+    angle = (angle * PI) / 180; // Converting to radian
+	left_motor_set_speed(8*distance*(cos(angle)+sin(angle)));
+	right_motor_set_speed(8*distance*(cos(angle)-sin(angle)));
 
-	uint16_t angle = 0;
-	c1 = chSequentialStreamGet(in);
-	if(is_number(c1)){
-		angle+=(uint8_t)c1-48;
-		c1 = chSequentialStreamGet(in);
-		if(is_number(c1)){
-			angle*=10;
-			angle+=(uint8_t)c1-48;
-			if(is_number(c1)){
-				angle*=10;
-				angle+=(uint8_t)c1-48;
-			}
-		}
-	}
+	//initialisation des variables
 
-	c1 = chSequentialStreamGet(in);
-	c1 = chSequentialStreamGet(in);
-	c1 = chSequentialStreamGet(in);
 
-	uint8_t distance = 0;
-	c1 = chSequentialStreamGet(in);
-	if(is_number(c1)){
-		distance+=(uint8_t)c1-48;
-		c1 = chSequentialStreamGet(in);
-		if(is_number(c1)){
-			distance*=10;
-			distance+=(uint8_t)c1-48;
-			if(is_number(c1)){
-				distance*=10;
-				distance+=(uint8_t)c1-48;
-			}
-		}
-	}*/
-    // Converting to radian
-    angle = (angle * PI) / 180;
-	//left_motor_set_speed(8*distance*(cos(angle)+sin(angle)));
-	//right_motor_set_speed(8*distance*(cos(angle)-sin(angle)));
-	//chprintf((BaseSequentialStream *)&SDU1, "L:%d R:%d \r\n", (int)(8*distance*(cos(angle)+sin(angle))), (int)(8*distance*(cos(angle)-sin(angle))));
-	//chprintf((BaseSequentialStream *)&SDU1, "A:%f D:%d \r\n", angle, distance);
-    if((int)(8*distance*(cos(angle)+sin(angle))) > 0 && (int)(8*distance*(cos(angle)-sin(angle))) > 0){
-    	set_led(0,2);
-    }else if((int)(8*distance*(cos(angle)+sin(angle))) < 0 && (int)(8*distance*(cos(angle)-sin(angle))) > 0){
-    	set_led(1,2);
-    }else if((int)(8*distance*(cos(angle)+sin(angle))) < 0 && (int)(8*distance*(cos(angle)-sin(angle))) < 0){
-    	set_led(2,2);
-    }else if((int)(8*distance*(cos(angle)+sin(angle))) > 0 && (int)(8*distance*(cos(angle)-sin(angle))) < 0){
-    	set_led(3,2);
-    }
+	float l1=0; //increment de la roue right
+	float l2=0; //increment de la roue left
+	l1= (right_motor_get_pos()-stepr_1)*CONVERTER; //de step a mm
+	l2= (left_motor_get_pos()-stepl_1)*CONVERTER;
 
+	position_x= position_x+(l1+l2)*cosf(my_angle)/2;
+	position_y= position_y+(l1+l2)*sinf(my_angle)/2;
+	my_angle=my_angle+tanf((l1-l2)/RAYON);
+	my_angle = my_angle*180/PI;
+
+	stepr_1=right_motor_get_pos();
+	stepl_1=left_motor_get_pos();
+	chprintf((BaseSequentialStream *)&SD3, "x:%f y:%f theta:%f \n\r", position_x, position_y, my_angle);
 }
 
 int main(void)
@@ -175,10 +140,10 @@ int main(void)
 	//stars the threads for the processing of the image
 	process_image_start();
 
-	set_rgb_led(1,0,200,200);
+	set_rgb_led(1,200,200,0);
     /* Infinite loop. */
     while (1) {
-        chThdSleepMilliseconds(100);
+        chThdSleepMilliseconds(50);
         ReceiveCommand((BaseSequentialStream *) &SD3);
     }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:async';
 import 'package:epuck_controller/controller.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 
@@ -16,6 +17,11 @@ class BTDevice{
   Status deviceStatus;
   BluetoothDevice bluedevice;
 
+  int ctrlAngle = 0;
+  int ctrlDist = 0;
+  bool ctrlHit = false;
+  Timer periodicCtrl;
+
   BluetoothConnection connection;
   bool isConnecting = true;
   bool get isConnected => connection != null && connection.isConnected;
@@ -25,25 +31,29 @@ class BTDevice{
     this.deviceStatus = Status.paired;
     this.bluedevice = bluedevice;
     //this.deviceName = deviceName;
+    periodicCtrl = Timer.periodic(Duration(milliseconds: 50), (timer) {
+      sendCtrlData();
+    });
   }
 
   void dispose(){
-    if(isConnecting){
-      isDisconnecting = true;
-      connection.dispose();
-      connection = null;
+    this.periodicCtrl.cancel();
+    if(this.isConnecting){
+      this.isDisconnecting = true;
+      this.connection.dispose();
+      this.connection = null;
     }
-    connection.dispose();
-    connection = null;
+    this.connection.dispose();
+    this.connection = null;
   }
 
   _getBTConnection(){
     BluetoothConnection.toAddress(bluedevice.address).then((_connection){
-      connection = _connection;
-      isConnecting = false;
-      isDisconnecting = false;
-      connection.input.listen(_onDataReceived).onDone((){
-        if(isDisconnecting){
+      this.connection = _connection;
+      this.isConnecting = false;
+      this.isDisconnecting = false;
+      this.connection.input.listen(_onDataReceived).onDone((){
+        if(this.isDisconnecting){
           print('Disconnecting locally');
         }else{
           print('Disconnecting remotely');
@@ -80,6 +90,29 @@ class BTDevice{
     }
     var decoded = utf8.decode(buffer);
     print(decoded);
+  }
+
+  void _sendMessage(String text) async {
+    text = text.trim();
+    if(text.length > 0){
+      try {
+        this.connection.output.add(utf8.encode(text));
+        await this.connection.output.allSent;
+      } catch (e) {
+        print("error");
+      }
+    }
+  }
+
+  void sendCtrlData(){
+    if(this.deviceStatus == Status.controlled){
+      _sendMessage(' a:${this.ctrlAngle} d:${this.ctrlDist} ');
+      //print(' a:${this.ctrlAngle} d:${this.ctrlDist} ');
+      if(this.ctrlHit == true){
+        this.ctrlHit = false;
+        _sendMessage(' h ');
+      }
+    }
   }
 
 }
@@ -157,7 +190,7 @@ class _DeviceCardState extends State<DeviceCard> {
                         MaterialPageRoute(
                           builder: (context) => Controller(widget.device),
                         ));
-                    //widget.device.deviceStatus = Status.controlled;
+                    widget.device.deviceStatus = Status.controlled;
                   }
                 });
               },
