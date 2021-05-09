@@ -66,7 +66,7 @@ void process_input_bfr(char* input_bfr){
 					discard = true;
 				}
 			}
-
+			//update data accordingly
 			if(discard == false){
 				switch(input_bfr[i]){
 				case ANGLE_CMD:{

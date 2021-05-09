@@ -297,7 +297,7 @@ VL53L0X_Error VL53L0X_stopMeasure(VL53L0X_Dev_t* device){
 	return VL53L0X_StopMeasurement(device);
 }
 
-void VL53L0X_start(void){
+void VL53L0Xa_start(void){
 
 	if(VL53L0X_configured) {
 		return;
@@ -323,13 +323,4 @@ uint16_t VL53L0X_get_dist_mm(void) {
 	return dist_mm;
 }
 
-void invers_speed(int sens){
-	if(sens==0){
-		right_motor_set_speed(200);
-		left_motor_set_speed(-200);
-	}
-	else{
-		right_motor_set_speed(-200);
-		left_motor_set_speed(200);
-	}
-}
+

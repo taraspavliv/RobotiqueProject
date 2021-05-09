@@ -21,6 +21,8 @@
 #include <position_motion_controller.h>
 #include <position_calibrator.h>
 
+//#include <../VL53L0X/VL53L0X.h>
+
 #define PI 3.14159265
 #define RAYON 53 //en mm a verifier
 #define CONVERTER PI*41/1000  //41mm comme diamètre de la roue
@@ -73,9 +75,10 @@ int main(void)
 	//spi_comm_start();
 
 	//stars the threads for the processing of the image
-	process_image_start();
+	/*process_image_start();
 	role_selector_start();
-	bt_communication_start();
+	bt_communication_start();*/
+	VL53L0X_start();
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
