@@ -10,11 +10,18 @@
 #include <string.h>
 #include <math.h>
 
+#include <usbcfg.h>
 #include <leds.h>
 
 #include <bt_communication.h>
 #include <role_selector.h>
 #include <position_motion_controller.h>
+
+//expected recieved data
+static uint16_t enemy_position[2] = {0,0}; // (x,y)
+static uint16_t ctrl_joystick_polar[2] = {0,0}; //(distance, angle)
+static bool ctrl_shoot = false;
+static bool calibrate = false;
 
 static THD_WORKING_AREA(waBluetoothComm, 512);
 static THD_FUNCTION(BluetoothComm, arg) {
@@ -22,125 +29,127 @@ static THD_FUNCTION(BluetoothComm, arg) {
   chRegSetThreadName(__FUNCTION__);
   (void)arg;
 
+  static char incoming_message_bfr[BFR_IN_SIZE] = {0}; //with a margin
 
   while(true) {
-
-	  //doesn't need to be very reactive, so long sleep time
-	  ReceiveCommand((BaseSequentialStream *) &SD3);
-	  chThdSleepMilliseconds(50);
+	  get_input_buffer((BaseSequentialStream *) &SD3, incoming_message_bfr);
+	  process_input_bfr(incoming_message_bfr);
+	  //send_position((BaseSequentialStream *) &SD3);
+	  chThdSleepMilliseconds(50); //20Hz, like the phone upload frequency
   }
 }
 
-void ReceiveCommand(BaseSequentialStream* in){
-	static char incoming_message_bfr[BFR_IN_SIZE] = {0}; //with a margin
-	volatile char incoming_char='-';
+void get_input_buffer(BaseSequentialStream* in, char* input_bfr){
+	char incoming_char = ' ';
 
-	memset(incoming_message_bfr,0,sizeof(incoming_message_bfr));
-	//fill the buffer
+	memset(input_bfr,' ',BFR_IN_SIZE);
+
 	uint8_t last_char_index = 0;
 	do{
 		incoming_char = chSequentialStreamGet(in);
-		incoming_message_bfr[last_char_index] = incoming_char;
+		input_bfr[last_char_index] = incoming_char;
 		++last_char_index;
-	}while(incoming_char != '-');
+	}while(incoming_char != '-' && last_char_index < BFR_IN_SIZE); // in case the '-' is missed, to not overflow the array
+}
 
-	//empty the recienving message
-	/*for(uint8_t m=0; m<5; ++m){
-		if(chSequentialStreamGet(in)){
-			incoming_char = chSequentialStreamGet(in);
-		}
-	}*/
-
-	//expected data
-	uint16_t angle_deg=0;
-	uint8_t distance=0;
-	uint16_t enemy_position_x = 0;
-	uint16_t enemy_position_y = 0;
-	bool shoot = false;
-	bool calibrate = false;
-
+void process_input_bfr(char* input_bfr){
 	bool discard = false;
+    for(int i=0; i < BFR_IN_SIZE && input_bfr[i] != '-'; ++i){
+		if(valid_command(input_bfr[i])){
 
-    for(int i=0; i < BFR_IN_SIZE && incoming_message_bfr[i] != '-'; ++i){
-		if(valid_command(incoming_message_bfr[i])){
-			if(incoming_message_bfr[i+1]==':'){
-				//translates incoming string to integer
-				uint16_t k = 0;
-				for(int j = 0; j < MAX_DATA_IN_LENGTH; ++j){
-					if(is_number(incoming_message_bfr[i+2+j])){
-						k+=(uint8_t)incoming_message_bfr[i+2+j]-ASCII_OF_ZERO;
-					}else if(incoming_message_bfr[i+2+j] == ' '){
-						break;
-					}else{
-						discard = true;
-						break;
-					}
-					k *= 10;
-				}
-				k /= 10;
-				if(discard == false){
-					if(ANGLE_CMD(incoming_message_bfr[i])){
-						angle_deg = k;
-					}else if(DISTANCE_CMD(incoming_message_bfr[i])){
-						distance = k;
-					}else if(ENEMY_X_CMD(incoming_message_bfr[i])){
-						enemy_position_x = k;
-					}else if(ENEMY_Y_CMD(incoming_message_bfr[i])){
-						enemy_position_y = k;
-					}
-				}
+			discard = false;
+			int16_t k = 0;//will store recieved integer
 
-			}else if(SHOOT_CMD(incoming_message_bfr[i])){
-				shoot = true;
-			}else if(CALIBRATE_CMD(incoming_message_bfr[i])){
-				calibrate = true;
+			if(input_bfr[i+1]==':'){
+				k = get_recieved_integer(&input_bfr[i+2]);
+				if(k<0){
+					discard = true;
+				}
+			}
+
+			if(discard == false){
+				switch(input_bfr[i]){
+				case ANGLE_CMD:{
+					ctrl_joystick_polar[1] = k;
+					break;
+				}
+				case DISTANCE_CMD:{
+					ctrl_joystick_polar[0] = k;
+					break;
+				}
+				case ENEMY_X_CMD:{
+					enemy_position[0] = k;
+					break;
+				}
+				case ENEMY_Y_CMD:{
+					enemy_position[1] = k;
+					break;
+				}
+				case SHOOT_CMD:{
+					ctrl_shoot = true;
+					break;
+				}
+				case CALIBRATE_CMD:{
+					calibrate = true;
+					break;
+				}
+				default: break;
+				}
 			}
 		}
     }
 
-    //handle recieved data
-    float angle_rad = 0;
-    angle_rad = (angle_deg * PI) / 180; // Converting to radian
-
-    set_led(0,cos(angle_rad) > 0);
-    set_led(2,cos(angle_rad) < 0);
-
-    set_led(1,sin(angle_rad) > 0);
-    set_led(3,sin(angle_rad) < 0);
-	/*left_motor_set_speed(8*distance*(cos(angle)+sin(angle)));
-	right_motor_set_speed(8*distance*(cos(angle)-sin(angle)));
-
-	//initialisation des variables
-
-
-	float l1=0; //increment de la roue right
-	float l2=0; //increment de la roue left
-	l1= (right_motor_get_pos()-stepr_1)*CONVERTER; //de step a mm
-	l2= (left_motor_get_pos()-stepl_1)*CONVERTER;
-
-	position_x= position_x+(l1+l2)*cosf(my_angle)/2;
-	position_y= position_y+(l1+l2)*sinf(my_angle)/2;
-	my_angle=my_angle+tanf((l1-l2)/RAYON);
-	my_angle = my_angle*180/PI;
-
-	stepr_1=right_motor_get_pos();
-	stepl_1=left_motor_get_pos();*/
-	//chprintf((BaseSequentialStream *)&SD3, "x:%f y:%f theta:%f \n\r", position_x, position_y, my_angle);
 }
 
+void send_position(BaseSequentialStream* in){
+	chprintf(in, "x:%d y:%d -", 0,0/*get_position()[0], get_position()[1]*/);
+	return;
+}
+
+
 bool valid_command(char incomming_cmd){
-	return ANGLE_CMD(incomming_cmd) || DISTANCE_CMD(incomming_cmd) || ENEMY_X_CMD(incomming_cmd) ||
-		   ENEMY_Y_CMD(incomming_cmd) || SHOOT_CMD(incomming_cmd) || CALIBRATE_CMD(incomming_cmd);
+	if(incomming_cmd == ANGLE_CMD || incomming_cmd == DISTANCE_CMD ||incomming_cmd == ENEMY_X_CMD ||
+	   incomming_cmd == ENEMY_Y_CMD ||incomming_cmd == SHOOT_CMD ||incomming_cmd == CALIBRATE_CMD){
+		return true;
+	}else{
+		return false;
+	}
 }
 
 bool is_number(char chara){
-    if((uint8_t)chara >= ASCII_OF_ZERO && (uint8_t)chara <= ASCII_OF_ZERO+9){
+    if((uint8_t)chara >= ASCII_OF_ZERO && (uint8_t)chara <= ASCII_OF_ZERO + 9){
         return true;
     }else{
         return false;
     }
-    return false;
 }
+
+int16_t get_recieved_integer(char* incoming_message_bfr){
+	//translates incoming following ASCII characeters to integer
+	uint16_t k = 0;
+	for(int j = 0; j < MAX_INTEGER_LENGTH; ++j){
+		if(is_number(incoming_message_bfr[j])){
+			k+=(uint8_t)incoming_message_bfr[j]-ASCII_OF_ZERO;
+		}else if(incoming_message_bfr[j] == ' '){ //every data followed by a space is considered valid
+			break;
+		}else{
+			return -1; //corrupted data
+		}
+		k *= 10;
+	}
+	k /= 10;
+	return k;
+}
+
+uint16_t* get_BT_enemy_position(void){ return enemy_position; }
+
+uint16_t* get_BT_controller_joystick_polar(void){ return ctrl_joystick_polar; }
+
+bool get_BT_controller_shoot(void){ return ctrl_shoot; }
+
+bool get_BT_calibrate(void){ return calibrate; }
+
+void reset_shoot(void){ ctrl_shoot = false; }
 
 void bt_communication_start(void){
 	chThdCreateStatic(waBluetoothComm, sizeof(waBluetoothComm), NORMALPRIO, BluetoothComm, NULL);

@@ -80,17 +80,18 @@ int main(void)
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
     while (true) {
-        //ReceiveCommand((BaseSequentialStream *) &SD3);
-        /*if(get_role() == SMART){
-        	set_led(3,1);
-        }else if(get_role() == GOALKEEPER){
-        	set_led(2,1);
-        }else if(get_role() == ATTACKER){
-        	set_led(0,1);
-        }else if(get_role() == CONTROLLED){
-        	set_led(1,1);
-        }*/
-        chThdSleepMilliseconds(1000);
+    	float angle_rad = get_BT_controller_joystick_polar()[1];
+    	angle_rad = angle_rad * 3.14159265 / 180;
+        set_led(0, cos(angle_rad)>0);
+        set_led(2, cos(angle_rad)<0);
+
+        set_led(1, sin(angle_rad)>0);
+        set_led(3, sin(angle_rad)<0);
+    	/* controlled_command
+    	left_motor_set_speed(8*distance*(cos(angle)+sin(angle)));
+    	right_motor_set_speed(8*distance*(cos(angle)-sin(angle)));
+    	*/
+        chThdSleepMilliseconds(10);
     }
 }
 

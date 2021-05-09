@@ -116,6 +116,7 @@ build/obj/bt_communication.o: bt_communication.c \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/strings.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/string.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h \
+ ../../lib/e-puck2_main-processor/src/usbcfg.h \
  ../../lib/e-puck2_main-processor/src/leds.h bt_communication.h \
  role_selector.h position_motion_controller.h
 
@@ -354,6 +355,8 @@ mcuconf.h:
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/string.h:
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h:
+
+../../lib/e-puck2_main-processor/src/usbcfg.h:
 
 ../../lib/e-puck2_main-processor/src/leds.h:
 
