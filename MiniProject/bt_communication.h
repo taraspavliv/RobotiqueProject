@@ -11,9 +11,9 @@
 void bt_communication_start(void);
 
 //main functions
-void get_input_buffer(BaseSequentialStream* in, char* input_bfr);
+void get_input_buffer(char* input_bfr);
 void process_input_bfr(char* input_bfr);
-void send_position(BaseSequentialStream* in);
+void send_position(void);
 
 //process functions
 bool valid_command(char incomming_cmd);

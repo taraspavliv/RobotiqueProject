@@ -66,17 +66,19 @@ int main(void)
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
+	bool test_ordered = false;
+	bool test_ordered_2 = false;
     while (true) {
     	uint8_t joystick_distance = get_BT_controller_joystick_polar()[0];
     	float angle_rad = get_BT_controller_joystick_polar()[1];
     	angle_rad = angle_rad * 3.14159265 / 180;
-        set_led(0, cos(angle_rad)>0);
-        set_led(2, cos(angle_rad)<0);
+        //set_led(0, cos(angle_rad)>0);
+        //set_led(2, cos(angle_rad)<0);
 
-        set_led(1, sin(angle_rad)>0);
-        set_led(3, sin(angle_rad)<0);
+        //set_led(1, sin(angle_rad)>0);
+        //set_led(3, sin(angle_rad)<0);
     	//controlled_command
-        if(get_BT_controller_shoot() == false){
+        /*if(get_BT_controller_shoot() == false){
         	left_motor_set_speed(8*joystick_distance*(cos(angle_rad)+sin(angle_rad)));
         	right_motor_set_speed(8*joystick_distance*(cos(angle_rad)-sin(angle_rad)));
         }else{
@@ -84,7 +86,19 @@ int main(void)
         	left_motor_set_speed(MOTOR_SPEED_LIMIT);
         	right_motor_set_speed(MOTOR_SPEED_LIMIT);
         	chThdSleepMilliseconds(700);
+        }*/
+        if(test_ordered == false){
+        	float target_position[2] = {400,600};
+        	//set_angle(90);
+        	set_position(target_position);
+        	test_ordered = true;
+        }else if(get_position_achieved() && test_ordered_2 == false){
+        	float target_position[2] = {500,500};
+        	set_position(target_position);
+        	test_ordered_2 = true;
         }
+
+
         chThdSleepMilliseconds(30);
     }
 }

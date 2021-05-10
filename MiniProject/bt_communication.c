@@ -45,21 +45,21 @@ static THD_FUNCTION(BluetoothComm, arg) {
   static char incoming_message_bfr[BFR_IN_SIZE] = {0}; //with a margin
 
   while(true) {
-	  get_input_buffer((BaseSequentialStream *) &SD3, incoming_message_bfr);
+	  get_input_buffer(incoming_message_bfr);
 	  process_input_bfr(incoming_message_bfr);
-	  send_position((BaseSequentialStream *) &SD3);
+	  send_position();
 	  chThdSleepMilliseconds(50); //20Hz, like the phone upload frequency
   }
 }
 
-void get_input_buffer(BaseSequentialStream* in, char* input_bfr){
+void get_input_buffer(char* input_bfr){
 	char incoming_char = ' ';
 
 	memset(input_bfr,' ',BFR_IN_SIZE);
 
 	uint8_t last_char_index = 0;
 	do{
-		incoming_char = chSequentialStreamGet(in);
+		incoming_char = chSequentialStreamGet((BaseSequentialStream *) &SD3);
 		input_bfr[last_char_index] = incoming_char;
 		++last_char_index;
 	}while(incoming_char != '-' && last_char_index < BFR_IN_SIZE); // in case the '-' is missed, to not overflow the array
@@ -114,8 +114,8 @@ void process_input_bfr(char* input_bfr){
 
 }
 
-void send_position(BaseSequentialStream* in){
-	chprintf(in, "x:%d y:%d -", get_self_position()[0], get_self_position()[1]);
+void send_position(void){
+	chprintf((BaseSequentialStream *) &SD3, "x:%d y:%d -", get_self_position()[0], get_self_position()[1]);
 	return;
 }
 
