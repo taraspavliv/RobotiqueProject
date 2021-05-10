@@ -13,9 +13,22 @@
 #include <usbcfg.h>
 #include <leds.h>
 
-#include <bt_communication.h>
-#include <role_selector.h>
-#include <position_motion_controller.h>
+#include "bt_communication.h"
+#include "role_selector.h"
+#include "motors_controller.h"
+
+#define BFR_IN_SIZE 48
+
+#define ANGLE_CMD 'a'
+#define DISTANCE_CMD 'd'
+#define ENEMY_X_CMD 'u'
+#define ENEMY_Y_CMD 'v'
+#define SHOOT_CMD 'h'
+#define CALIBRATE_CMD 'c'
+
+#define MAX_INTEGER_LENGTH 5
+
+#define ASCII_OF_ZERO 48
 
 //expected recieved data
 static uint16_t enemy_position[2] = {0,0}; // (x,y)
@@ -34,7 +47,7 @@ static THD_FUNCTION(BluetoothComm, arg) {
   while(true) {
 	  get_input_buffer((BaseSequentialStream *) &SD3, incoming_message_bfr);
 	  process_input_bfr(incoming_message_bfr);
-	  //send_position((BaseSequentialStream *) &SD3);
+	  send_position((BaseSequentialStream *) &SD3);
 	  chThdSleepMilliseconds(50); //20Hz, like the phone upload frequency
   }
 }
@@ -102,7 +115,7 @@ void process_input_bfr(char* input_bfr){
 }
 
 void send_position(BaseSequentialStream* in){
-	chprintf(in, "x:%d y:%d -", 0,0/*get_position()[0], get_position()[1]*/);
+	chprintf(in, "x:%d y:%d -", get_self_position()[0], get_self_position()[1]);
 	return;
 }
 

@@ -105,14 +105,19 @@ class BTDevice{
   }
 
   void sendCtrlData(){
+    String ctrlSendString = " ";
     if(this.deviceStatus == Status.controlled){
-      _sendMessage(' a:${this.ctrlAngle} d:${this.ctrlDist} ');
+      ctrlSendString = ctrlSendString + ' a:${this.ctrlAngle} d:${this.ctrlDist}';
+      //_sendMessage(' a:${this.ctrlAngle} d:${this.ctrlDist} ');
       //print(' a:${this.ctrlAngle} d:${this.ctrlDist} ');
       if(this.ctrlHit == true){
         this.ctrlHit = false;
-        _sendMessage(' h ');
+        ctrlSendString = ctrlSendString + ' h';
+        //_sendMessage(' h ');
       }
     }
+    ctrlSendString =  ctrlSendString + ' -';
+    _sendMessage(ctrlSendString);
   }
 
 }

@@ -9,7 +9,11 @@
 #include <math.h>
 #include <motors.h>
 
-#include <process_image.h>
+#include "process_image.h"
+
+#define LINES_TO_ANALYSE 3
+#define MINIMUM_BALL_SIZE 7
+#define RGB_nb 3
 
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);

@@ -7,7 +7,11 @@
 #include "ch.h"
 #include "selector.h"
 
-#include <role_selector.h>
+#include "role_selector.h"
+
+#define IS_GOALKEEPER(selector_position) (selector_position >= 0x03 && selector_position <= 0x05)
+#define IS_SMART(selector_position) (selector_position >= 0x06 && selector_position <= 0x0A)
+#define IS_ATTACKER(selector_position) (selector_position >= 0x0B && selector_position <= 0x0D)
 
 static enum Role epuck_role = SMART;
 

@@ -13,7 +13,7 @@ CSRC += ./main.c \
 		./process_image.c \
 		./bt_communication.c \
 		./position_calibrator.c \
-		./position_motion_controller.c \
+		./motors_controller.c \
 		./role_selector.c \
 
 #Header folders to include

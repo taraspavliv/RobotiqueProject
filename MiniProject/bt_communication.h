@@ -8,19 +8,6 @@
 #ifndef BT_COMMUNICATION_H_
 #define BT_COMMUNICATION_H_
 
-#define BFR_IN_SIZE 48
-
-#define ANGLE_CMD 'a'
-#define DISTANCE_CMD 'd'
-#define ENEMY_X_CMD 'u'
-#define ENEMY_Y_CMD 'v'
-#define SHOOT_CMD 'h'
-#define CALIBRATE_CMD 'c'
-
-#define MAX_INTEGER_LENGTH 5
-
-#define ASCII_OF_ZERO 48
-
 void bt_communication_start(void);
 
 //main functions

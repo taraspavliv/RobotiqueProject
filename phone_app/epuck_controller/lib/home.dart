@@ -161,7 +161,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
       appBar: AppBar(
         title: Text(_isDiscovering ? 'Looking...' :'E-puck  Football  Tool', style: TextStyle(color: Colors.black,)),
         centerTitle: true,
-        backgroundColor: Colors.lightBlueAccent[100],
+        backgroundColor: Colors.lightGreen[600],
       ),
       body: ListView(
         children: BTdevices.map((device) =>  DeviceCard(device)).toList(),
@@ -175,7 +175,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
             color: Colors.black,
             size: 30.0,
           ),
-          backgroundColor: Colors.lightBlueAccent[100],
+          backgroundColor: Colors.lightGreen[600],
           onPressed: (){
             BTdevices.clear();
             for(int i=0; i < AVdevices.length; ++i){

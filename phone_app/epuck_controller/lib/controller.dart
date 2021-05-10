@@ -20,6 +20,7 @@ class _ControllerState extends State<Controller> {
   @override
   dispose(){
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    widget.device.deviceStatus = Status.connected;
     super.dispose();
   }
   Widget build(BuildContext context) {
@@ -30,7 +31,7 @@ class _ControllerState extends State<Controller> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.lightBlueAccent[100],
+        backgroundColor: Colors.lightGreen[600],
       ),
       body: SafeArea(
         child: Row(

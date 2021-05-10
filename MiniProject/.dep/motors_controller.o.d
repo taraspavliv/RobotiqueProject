@@ -1,4 +1,4 @@
-build/obj/bt_communication.o: bt_communication.c \
+build/obj/motors_controller.o: motors_controller.c \
  ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/ch.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/rt/ports/ARMCMx/compilers/GCC/chtypes.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/lib/gcc/arm-none-eabi/7.2.1/include/stddef.h \
@@ -101,24 +101,19 @@ build/obj/bt_communication.o: bt_communication.c \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/include/serial_usb.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/lib/gcc/arm-none-eabi/7.2.1/include/stdarg.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/string.h \
+ ../../lib/e-puck2_main-processor/src/usbcfg.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/reent.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/_ansi.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/newlib.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/config.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/ieeefp.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/reent.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/_ansi.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_types.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_types.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/lock.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/cdefs.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/xlocale.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/strings.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/string.h \
- /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h \
- ../../lib/e-puck2_main-processor/src/usbcfg.h \
- ../../lib/e-puck2_main-processor/src/leds.h bt_communication.h \
- role_selector.h motors_controller.h
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/_ansi.h \
+ ../../lib/e-puck2_main-processor/src/motors.h motors_controller.h
 
 ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/ch.h:
 
@@ -326,7 +321,11 @@ mcuconf.h:
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/lib/gcc/arm-none-eabi/7.2.1/include/stdarg.h:
 
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/string.h:
+../../lib/e-puck2_main-processor/src/usbcfg.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/reent.h:
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/_ansi.h:
 
@@ -336,10 +335,6 @@ mcuconf.h:
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/ieeefp.h:
 
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/reent.h:
-
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/_ansi.h:
-
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_types.h:
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_types.h:
@@ -348,20 +343,8 @@ mcuconf.h:
 
 /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/cdefs.h:
 
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/xlocale.h:
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/_ansi.h:
 
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/strings.h:
-
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/string.h:
-
-/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h:
-
-../../lib/e-puck2_main-processor/src/usbcfg.h:
-
-../../lib/e-puck2_main-processor/src/leds.h:
-
-bt_communication.h:
-
-role_selector.h:
+../../lib/e-puck2_main-processor/src/motors.h:
 
 motors_controller.h:

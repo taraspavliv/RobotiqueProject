@@ -15,20 +15,13 @@
 #include <spi_comm.h> //for RGB leds
 #include <selector.h>
 
-#include <role_selector.h>
-#include <process_image.h>
-#include <bt_communication.h>
-#include <position_motion_controller.h>
-#include <position_calibrator.h>
+#include "role_selector.h"
+#include "process_image.h"
+#include "bt_communication.h"
+#include "position_calibrator.h"
+#include "motors_controller.h"
 
-//#include <../VL53L0X/VL53L0X.h>
-
-#define PI 3.14159265
-#define RAYON 53 //en mm a verifier
-#define CONVERTER PI*41/1000  //41mm comme diamètre de la roue
-
-
-static void serial_start(void)
+static void serial_start(void) //TODO:move to bt_communication?
 {
 	static SerialConfig ser_cfg = {
 	    115200,
@@ -39,15 +32,6 @@ static void serial_start(void)
 
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
-
-
-
-static float position_x =0;
-static float position_y=0;
-static float my_angle=0;
-static float stepr_1=0;
-static float stepl_1=0;
-
 
 
 int main(void)
@@ -75,14 +59,15 @@ int main(void)
 	//spi_comm_start();
 
 	//stars the threads for the processing of the image
-	/*process_image_start();
+	process_image_start();
 	role_selector_start();
-	bt_communication_start();*/
-	VL53L0X_start();
+	bt_communication_start();
+	motors_controller_start();
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
     while (true) {
+    	uint8_t joystick_distance = get_BT_controller_joystick_polar()[0];
     	float angle_rad = get_BT_controller_joystick_polar()[1];
     	angle_rad = angle_rad * 3.14159265 / 180;
         set_led(0, cos(angle_rad)>0);
@@ -90,11 +75,17 @@ int main(void)
 
         set_led(1, sin(angle_rad)>0);
         set_led(3, sin(angle_rad)<0);
-    	/* controlled_command
-    	left_motor_set_speed(8*distance*(cos(angle)+sin(angle)));
-    	right_motor_set_speed(8*distance*(cos(angle)-sin(angle)));
-    	*/
-        chThdSleepMilliseconds(10);
+    	//controlled_command
+        if(get_BT_controller_shoot() == false){
+        	left_motor_set_speed(8*joystick_distance*(cos(angle_rad)+sin(angle_rad)));
+        	right_motor_set_speed(8*joystick_distance*(cos(angle_rad)-sin(angle_rad)));
+        }else{
+        	reset_shoot();
+        	left_motor_set_speed(MOTOR_SPEED_LIMIT);
+        	right_motor_set_speed(MOTOR_SPEED_LIMIT);
+        	chThdSleepMilliseconds(700);
+        }
+        chThdSleepMilliseconds(30);
     }
 }
 
