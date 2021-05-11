@@ -20,8 +20,6 @@
 #define STEPS_TO_DIST(steps) ((steps)*PI*WHEEL_DIAMETER/1000)
 
 #define FULL_CIRCLE 360 //in degrees
-#define RAD_TO_DEG(radians) (radians*180/PI) //converts radians to centi-degree TODO: fmod(angle1+18000, 36000)-fmod(angle2+18000,36000)
-#define DEG_TO_RAD(deg) (deg*PI/180)  //converts centi-degree to radians
 
 #define DIRECTION_PRECISION 0.1 //deg
 #define DIRECTION_SPEED_FINE_THRESHOL 5 //deg
@@ -35,7 +33,7 @@
 
 #define KP 10 //proportional regulator
 
-static float my_position[2] = {500, 500}; //(x,y) unit: 10^-4 m
+static float my_position[2] = {500, 500}; //(x,y) unit: mm
 static float my_angle = 0; //unit: deg
 
 static bool dir_obj_ach = true; //true if the objective(goal) direction has been achieved
@@ -43,7 +41,7 @@ static bool pos_obj_ach = true; //true if the objective(goal) position has been 
 
 static float position_objective[2] = {0,0};
 static float angle_objective = 0;
-static float previous_position[2] = {0,0};
+
 
 static THD_WORKING_AREA(waMotorsControl, 256);
 static THD_FUNCTION(MotorsControl, arg) {
@@ -139,9 +137,6 @@ static THD_FUNCTION(MotorsControl, arg) {
 				 }
 			 }
 		 }
-		 /*if(abs(get_position_difference(my_position, previous_position)) > 50){
-			 set_position(position_objective);
-		 }*/
 	 }
 
 	 chThdSleepMilliseconds(20); //50Hz
@@ -169,8 +164,6 @@ void set_distance_forward(float distance){
 	pos_obj_ach = false;
 	position_objective[0] = my_position[0] + distance*cosf(DEG_TO_RAD(my_angle));
 	position_objective[1] = my_position[1] + distance*sinf(DEG_TO_RAD(my_angle));
-	previous_position[0] = my_position[0];
-	previous_position[1] = my_position[1];
 }
 
 void set_position(float* position){
@@ -179,8 +172,6 @@ void set_position(float* position){
 	angle_objective = RAD_TO_DEG(atan2f(position[1]-my_position[1], position[0]-my_position[0]));
 	position_objective[0] = position[0];
 	position_objective[1] = position[1];
-	previous_position[0] = my_position[0];
-	previous_position[1] = my_position[1];
 }
 
 float get_angle_difference(float angle1,float angle2){

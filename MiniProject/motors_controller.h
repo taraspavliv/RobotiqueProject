@@ -9,6 +9,8 @@
 #define MOTORS_CONTROLLER_H_
 
 #define PI 3.14159265
+#define RAD_TO_DEG(radians) (radians*180/PI) //converts radians to centi-degree
+#define DEG_TO_RAD(deg) (deg*PI/180)  //converts centi-degree to radians
 
 void motors_controller_start(void);
 

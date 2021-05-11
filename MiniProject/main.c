@@ -21,7 +21,7 @@
 #include "position_calibrator.h"
 #include "motors_controller.h"
 
-static void serial_start(void) //TODO:move to bt_communication?
+static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
 	    115200,
@@ -40,16 +40,12 @@ int main(void)
     halInit();
     chSysInit();
     mpu_init();
-    //messagebus_init();
-
-	//clear_leds();
-	//set_body_led(0);
-	//set_front_led(0);
+    //messagebus_init(); TODO:remove?
 
     //starts the serial communication
     serial_start();
     //start the USB communication
-    usb_start();
+    usb_start(); //TODO:remove?
     //starts the camera
     dcmi_start();
 	po8030_start();
@@ -87,8 +83,9 @@ int main(void)
         	right_motor_set_speed(MOTOR_SPEED_LIMIT);
         	chThdSleepMilliseconds(700);
         }*/
-        if(test_ordered == false){
-        	float target_position[2] = {400,600};
+    	set_angle(90);
+        /*if(test_ordered == false){
+        	float target_position[2] = {1200,400};
         	//set_angle(90);
         	set_position(target_position);
         	test_ordered = true;
@@ -96,7 +93,7 @@ int main(void)
         	float target_position[2] = {500,500};
         	set_position(target_position);
         	test_ordered_2 = true;
-        }
+        }*/
 
 
         chThdSleepMilliseconds(30);

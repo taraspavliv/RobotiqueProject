@@ -115,7 +115,7 @@ void process_input_bfr(char* input_bfr){
 }
 
 void send_position(void){
-	chprintf((BaseSequentialStream *) &SD3, "x:%d y:%d -", get_self_position()[0], get_self_position()[1]);
+	chprintf((BaseSequentialStream *) &SD3, "x:%d y:%d -", (uint16_t)get_self_position()[0], (uint16_t)get_self_position()[1]);
 	return;
 }
 
