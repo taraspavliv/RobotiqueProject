@@ -1,0 +1,15 @@
+This "simulation" was used to find a model for the "smart" player.
+The smart player chooses when he attacks and when he defends. He does so by calculating an "attacking score" for himself and for the enemy player. If his attacking score is greater, he will try to attack, otherwise he will try to defend.
+He takes these decision only when he can see the ball (to be closer to the real game), which is indicated by a red "LED".
+
+This score can be seen in the top left corner. The score in black is the score of the human player, the score in red is the score of the robot player. The score is based on:
+-the alignement of the point: player - ball - enemy goal (if they are all perfectly aligned, it gives a high attacking score)
+-the closeness of the player to the ball (the closer the player, the higher the score)
+-the closeness of the ball to the enemy goal (if it is close -> high attacking score)
+
+Configurations can be tested as follows:
+-The robot player will be teleported to any point the mouse clicks
+-The human player can be moved with arrows and space bar for boosts
+-The ball (white circle) can be shooted by collision
+
+By playing around a bit, we have tested that this attacking score looks like a good way to decide when to attack or defend. However the code of attacking and defending isn't finished because it would take a long time to code and wouldn't give a lot of information (it moves but is sometimes a bit random).
