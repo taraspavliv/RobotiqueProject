@@ -5,7 +5,6 @@
  *      Author: rosendo
  */
 #include <position_calibrator.h>
-
 #include "ch.h"
 #include "hal.h"
 #include "VL53L0X.h"
@@ -20,7 +19,6 @@ static uint16_t dist_mm = 0;
 static thread_t *distThd;
 static bool VL53L0X_configured = false;
 
-//////////////////// PUBLIC FUNCTIONS /////////////////////////
 static THD_WORKING_AREA(waVL53L0XThd, 512);
 static THD_FUNCTION(VL53L0XThd, arg) {
 
@@ -30,8 +28,6 @@ static THD_FUNCTION(VL53L0XThd, arg) {
 	    int last_distance=1;
 	    int new_distance=0;
 	    int limit=0;
-	    int bools=0;
-	    int part=0;
 	    int save_measure1=0;
 	    int save_measure2=0;
 	    int first_measure=0; //gives the first measurment of distance
@@ -77,10 +73,10 @@ static THD_FUNCTION(VL53L0XThd, arg) {
 //calculation of the new measure using a sort of a filter
 
 		new_distance= dist_mm;
-    	chprintf((BaseSequentialStream *)&SDU1, "new_dist:=%dus\n", new_distance);
+    	/*chprintf((BaseSequentialStream *)&SDU1, "new_dist:=%dus\n", new_distance);
     	chprintf((BaseSequentialStream *)&SDU1, "limit:=%dus\n", limit);
     	chprintf((BaseSequentialStream *)&SDU1, "first_measure:=%dus\n", first_measure);
-    	chprintf((BaseSequentialStream *)&SDU1, "first_measure:=%dus\n", second_measure);
+    	chprintf((BaseSequentialStream *)&SDU1, "first_measure:=%dus\n", second_measure);*/
 
 
 
@@ -88,7 +84,7 @@ static THD_FUNCTION(VL53L0XThd, arg) {
 			if(((last_distance+15)<new_distance) & (limit!=4)& (limit!=8)){
 			    		invers_speed(rotationclock);
 			    		limit+=1;
-			    		chprintf((BaseSequentialStream *)&SDU1, "invers:=%dus\n", 0);
+			    		//chprintf((BaseSequentialStream *)&SDU1, "invers:=%dus\n", 0);
 			    		if (rotationclock==1){
 			    			rotationclock=0;
 			    		}
@@ -99,41 +95,32 @@ static THD_FUNCTION(VL53L0XThd, arg) {
 				}
 				if(limit==4){
 					first_measure=(save_measure1+dist_mm)/2,
-					chprintf((BaseSequentialStream *)&SDU1, "YES:=%dus\n", 0);
+					//chprintf((BaseSequentialStream *)&SDU1, "YES:=%dus\n", 0);
 				}
 				if(limit==7){
 					save_measure2=dist_mm;
 				}
 				if(limit==8){
 				second_measure=(save_measure2+dist_mm)/2,
-				chprintf((BaseSequentialStream *)&SDU1, "YES2:=%dus\n", 0);
+				//chprintf((BaseSequentialStream *)&SDU1, "YES2:=%dus\n", 0);
 				}
 
 
 			}
 			if((limit==4) & (part<25)){
 				part+=1;
-		    	chprintf((BaseSequentialStream *)&SDU1, "part:=%dus\n", part);
+		    	//chprintf((BaseSequentialStream *)&SDU1, "part:=%dus\n", part);
 
 			}
 			if(part>=25){
 				part=0;
 				limit=5;
 			}
-			/*if((limit==8) & (part<100)){
-			part+=1;
-	    	chprintf((BaseSequentialStream *)&SDU1, "part2:=%dus\n", part);
-
-			}*/
 			if(limit==8){
 			part=0;
 		    right_motor_set_speed(0);//the robot starts rotating
 		    left_motor_set_speed(0);
 			}
-
-
-
-
 		if (last_distance>new_distance){
 			last_distance=new_distance;
 		}
@@ -142,10 +129,7 @@ static THD_FUNCTION(VL53L0XThd, arg) {
 				last_distance=new_distance;
 			}
 		}
-
     }
-
-
 }
 
 
