@@ -8,6 +8,6 @@
 #ifndef POSITION_CALIBRATOR_H_
 #define POSITION_CALIBRATOR_H_
 
-
+void invers_speed(int sens);
 
 #endif /* POSITION_CALIBRATOR_H_ */
