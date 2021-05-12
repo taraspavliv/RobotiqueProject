@@ -27,6 +27,6 @@ bool get_BT_controller_shoot(void);
 bool get_BT_calibrate(void);
 
 //setters
-void reset_shoot(void);
+void reset_BT_shoot(void);
 
 #endif /* BT_COMMUNICATION_H_ */

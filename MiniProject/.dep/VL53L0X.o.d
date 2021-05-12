@@ -141,8 +141,7 @@ build/obj/VL53L0X.o: \
  ../../lib/e-puck2_main-processor/ChibiOS//os/various/shell.h \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h \
  ../../lib/e-puck2_main-processor/src/i2c_bus.h \
- ../../lib/e-puck2_main-processor/src/usbcfg.h \
- ../../lib/e-puck2_main-processor/src/motors.h
+ ../../lib/e-puck2_main-processor/src/usbcfg.h
 
 ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/ch.h:
 
@@ -429,5 +428,3 @@ mcuconf.h:
 ../../lib/e-puck2_main-processor/src/i2c_bus.h:
 
 ../../lib/e-puck2_main-processor/src/usbcfg.h:
-
-../../lib/e-puck2_main-processor/src/motors.h:

@@ -162,7 +162,7 @@ bool get_BT_controller_shoot(void){ return ctrl_shoot; }
 
 bool get_BT_calibrate(void){ return calibrate; }
 
-void reset_shoot(void){ ctrl_shoot = false; }
+void reset_BT_shoot(void){ ctrl_shoot = false; }
 
 void bt_communication_start(void){
 	chThdCreateStatic(waBluetoothComm, sizeof(waBluetoothComm), NORMALPRIO, BluetoothComm, NULL);

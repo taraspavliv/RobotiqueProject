@@ -31,7 +31,9 @@
 #define POSITION_COARSE_TUNE_SPEED 880
 #define POSITION_FINE_TUNE_SPEED 50
 
-#define KP 10 //proportional regulator
+#define BT_CONTROL_K 8
+
+#define KP 10 //proportional regulator constant
 
 static float my_position[2] = {500, 500}; //(x,y) unit: mm
 static float my_angle = 0; //unit: deg
@@ -42,6 +44,7 @@ static bool pos_obj_ach = true; //true if the objective(goal) position has been 
 static float position_objective[2] = {0,0};
 static float angle_objective = 0;
 
+static bool shooting = false;
 
 static THD_WORKING_AREA(waMotorsControl, 256);
 static THD_FUNCTION(MotorsControl, arg) {
@@ -143,21 +146,22 @@ static THD_FUNCTION(MotorsControl, arg) {
   }
 }
 
-float* get_self_position(void){
-	return my_position;
+int16_t* get_self_position(void){
+	return (int16_t* )my_position;
 }
 
-float get_self_angle(void){
-	return my_angle;
+int16_t get_self_angle(void){
+	return (int16_t)my_angle;
 }
 
 void shoot(void){
-
+	left_motor_set_speed(MOTOR_SPEED_LIMIT);
+	right_motor_set_speed(MOTOR_SPEED_LIMIT);
 }
 
-void set_angle(float angle){
+void set_angle_obj(uint16_t angle){
 	dir_obj_ach = false;
-	angle_objective = angle;
+	angle_objective = (float)angle;
 }
 
 void set_distance_forward(float distance){
@@ -166,10 +170,10 @@ void set_distance_forward(float distance){
 	position_objective[1] = my_position[1] + distance*sinf(DEG_TO_RAD(my_angle));
 }
 
-void set_position(float* position){
+void set_position_obj(int16_t* position){
 	dir_obj_ach = false;
 	pos_obj_ach = false;
-	angle_objective = RAD_TO_DEG(atan2f(position[1]-my_position[1], position[0]-my_position[0]));
+	angle_objective = RAD_TO_DEG(atan2f((float)(position[1])-my_position[1], (float)(position[0])-my_position[0]));
 	position_objective[0] = position[0];
 	position_objective[1] = position[1];
 }
@@ -200,6 +204,26 @@ bool get_direction_achieved(void){
 
 bool get_position_achieved(void){
 	return pos_obj_ach;
+}
+
+void motor_shoot(void){
+	left_motor_set_speed(MOTOR_SPEED_LIMIT);
+	right_motor_set_speed(MOTOR_SPEED_LIMIT);
+	shooting = true;
+}
+
+void reset_motor_shoot(void){
+	left_motor_set_speed(0);
+	right_motor_set_speed(0);
+	shooting = false;
+}
+
+void control_motors_BT(uint16_t* joystick_polar_coord){
+	uint8_t joystick_distance = (uint8_t)joystick_polar_coord[0];
+	float angle_rad = DEG_TO_RAD(joystick_polar_coord[1]);
+
+	left_motor_set_speed(BT_CONTROL_K*joystick_distance*(cos(angle_rad)+sin(angle_rad)));
+	right_motor_set_speed(BT_CONTROL_K*joystick_distance*(cos(angle_rad)-sin(angle_rad)));
 }
 
 void motors_controller_start(void){

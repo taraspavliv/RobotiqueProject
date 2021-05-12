@@ -17,11 +17,13 @@
 
 #define BALL_EDGE_THRS 3 //threshold of the edge (derivative)
 
-#define BALL_RADIUS_SEEN 18.735 //radius of the ball at the level of the camera, unit: mm TODO: check
 #define CAMERA_ANGLE_OF_VIEW 0.7854 //unit: rad
+#define BALL_RADIUS_SEEN 18.735 //radius of the ball at the level of the camera, unit: mm TODO: check
 
 #define LP_POS_K 0.2 //low pass filter for position, an approximation of the moving average of "1/LP_POS_K" positions
 #define LP_MOV_K 0.2 //low pass filter for movement, an approximation of the moving average of "1/LP_MOV_K" movements
+
+#define MS_TO_S 1000 //converts the speed from mm/ms to mm/s
 
 static int16_t ball_position_filtered[2] = {0, 0}; //(x,y) unit: mm
 static int16_t ball_speed_vector_filtered[2] = {0, 0}; //(x,y) unit: mm/s
@@ -182,8 +184,8 @@ void update_ball_pos_mov(uint16_t left_ball_side, uint16_t right_ball_side){
 		ball_position_filtered[1] = LP_POS_K * ball_current_estimate_pos[1] + (1 - LP_POS_K)*ball_position_filtered[1];
 
 		//and the same for the movement vector
-		ball_current_estimate_mov[0] = (ball_position_filtered[0] - ball_last_filtered_position[0])*1000/(chVTGetSystemTime() - last_systime);
-		ball_current_estimate_mov[1] = (ball_position_filtered[1] - ball_last_filtered_position[1])*1000/(chVTGetSystemTime() - last_systime);
+		ball_current_estimate_mov[0] = (ball_position_filtered[0] - ball_last_filtered_position[0])*MS_TO_S/(chVTGetSystemTime() - last_systime);
+		ball_current_estimate_mov[1] = (ball_position_filtered[1] - ball_last_filtered_position[1])*MS_TO_S/(chVTGetSystemTime() - last_systime);
 		//filter movement vector
 		ball_speed_vector_filtered[0] = LP_MOV_K * ball_current_estimate_mov[0] + (1 - LP_MOV_K)*ball_speed_vector_filtered[0];
 		ball_speed_vector_filtered[1] = LP_MOV_K * ball_current_estimate_mov[1] + (1 - LP_MOV_K)*ball_speed_vector_filtered[1];

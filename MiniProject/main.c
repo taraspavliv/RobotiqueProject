@@ -21,6 +21,23 @@
 #include "position_calibrator.h"
 #include "motors_controller.h"
 
+#define FIELD_WIDTH 600 //in mm
+#define FIELD_HEIGHT 900 //in mm
+#define GOAL_WIDTH 300 //in mm
+#define EPUCK_DIAMETER 80 //in mm
+#define KEEPER_Y_MARGIN 10 //in mm
+
+#define KEEPER_LEFT 160 //camera angle of view is 45 deg, so by turning to 160 should be able to see up to 180
+#define KEEPER_RIGHT 20
+#define KEEPER_INTERCEPT_THRS 9 //in mm^2*s^-2, we already square 3mm/s for optimisation
+
+enum KeeperState{RETREATING, K_SCANNING, K_FOCUSING, INTERCEPTING, K_REFOCUSING};
+enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, SHOOTING};
+
+void attack_FSM(bool role_changed);
+void keeper_FSM(bool role_changed);
+void bt_control(void);
+
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -62,38 +79,33 @@ int main(void)
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
-	bool test_ordered = false;
-	bool test_ordered_2 = false;
-    while (true) {
-    	uint8_t joystick_distance = get_BT_controller_joystick_polar()[0];
-    	float angle_rad = get_BT_controller_joystick_polar()[1];
-    	angle_rad = angle_rad * 3.14159265 / 180;
-        //set_led(0, cos(angle_rad)>0);
-        //set_led(2, cos(angle_rad)<0);
+	enum Role my_role = SMART;
+	bool smart_attacking = true; //if true, the epuck plays as an attacker, if false he plays as goalkeeper
+	bool role_changed = false;
+	bool smart_role_changed = false;
 
-        //set_led(1, sin(angle_rad)>0);
-        //set_led(3, sin(angle_rad)<0);
-    	//controlled_command
-        /*if(get_BT_controller_shoot() == false){
-        	left_motor_set_speed(8*joystick_distance*(cos(angle_rad)+sin(angle_rad)));
-        	right_motor_set_speed(8*joystick_distance*(cos(angle_rad)-sin(angle_rad)));
-        }else{
-        	reset_shoot();
-        	left_motor_set_speed(MOTOR_SPEED_LIMIT);
-        	right_motor_set_speed(MOTOR_SPEED_LIMIT);
-        	chThdSleepMilliseconds(700);
-        }*/
-    	set_angle(90);
-        /*if(test_ordered == false){
-        	float target_position[2] = {1200,400};
-        	//set_angle(90);
-        	set_position(target_position);
-        	test_ordered = true;
-        }else if(get_position_achieved() && test_ordered_2 == false){
-        	float target_position[2] = {500,500};
-        	set_position(target_position);
-        	test_ordered_2 = true;
-        }*/
+    while (true) {
+    	role_changed = (my_role != get_role());
+    	my_role = get_role();
+
+    	switch(my_role){
+    	case ATTACKER:{
+    		attack_FSM(role_changed);
+    		break;
+    	}
+    	case GOALKEEPER:{
+    		keeper_FSM(role_changed);
+    		break;
+    	}
+    	case CONTROLLED:{
+    		bt_control();
+    		break;
+    	}
+    	case SMART:{
+    		//if sees ball, checks if should switch state, (re)sets smart_role_changed
+    		//smart_attacking?attack_FSM(smart_role_changed):keeper_FSM(smart_role_changed);
+    	}
+    	}
 
 
         chThdSleepMilliseconds(30);
@@ -106,4 +118,116 @@ uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 void __stack_chk_fail(void)
 {
     chSysHalt("Stack smashing detected");
+}
+
+void bt_control(void){
+    if(get_BT_controller_shoot() == true){
+    	motor_shoot();
+    	chThdSleepMilliseconds(700); //TODO: this works?, if not FSM return bools if shooting
+    	reset_BT_shoot();
+    	reset_motor_shoot();
+    }else{
+    	control_motors_BT(get_BT_controller_joystick_polar());
+    }
+}
+
+void keeper_FSM(bool role_changed){
+	static enum KeeperState goalkeeper_state = K_SCANNING;
+	static bool scanning_left = true; //false-> scanning right
+	static int16_t refocus_angle = 0;
+
+	if(role_changed){
+		if((uint16_t)get_self_position()[0] > FIELD_WIDTH/2 - GOAL_WIDTH/2 && (uint16_t)get_self_position()[0] < FIELD_WIDTH/2 + GOAL_WIDTH/2 &&
+		   (uint16_t)get_self_position()[1] > EPUCK_DIAMETER/2 && (uint16_t)get_self_position()[1] < EPUCK_DIAMETER/2 + KEEPER_Y_MARGIN){
+			set_angle_obj(KEEPER_LEFT);
+			scanning_left = true;
+			goalkeeper_state = K_SCANNING;
+		}else{
+			int16_t goal_center[2] = {FIELD_WIDTH/2, EPUCK_DIAMETER/2 + KEEPER_Y_MARGIN};
+			set_position_obj(goal_center);
+			goalkeeper_state = RETREATING;
+		}
+	}
+	switch(goalkeeper_state){
+	case RETREATING:{
+		if(get_position_achieved()){
+			set_angle_obj(KEEPER_LEFT);
+			goalkeeper_state = K_SCANNING;
+		}
+		break;
+	}
+	case K_SCANNING:{
+		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
+			float angle_to_ball = 0.0;
+			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[1]));
+			if(angle_to_ball < 0){
+				angle_to_ball += 2*PI;
+			}
+			set_angle_obj(angle_to_ball);
+			goalkeeper_state = K_FOCUSING;
+		}else{
+			if(get_direction_achieved()){
+				//scans to the other side when turned to the right angle
+				scanning_left == true ? set_angle_obj(KEEPER_RIGHT) : set_angle_obj(KEEPER_LEFT);
+				scanning_left = !scanning_left;
+			}
+		}
+		break;
+	}
+	case K_FOCUSING:{
+		if(get_ball_visibility() == PARTIAL){
+			float angle_to_ball = 0.0;
+			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
+			if(angle_to_ball < 0){
+				angle_to_ball += 2*PI;
+			}
+			set_angle_obj(angle_to_ball);
+		}else if(get_ball_visibility() == FULL){
+			//will the ball score if epuck doesn't move? reposition + set refocus angle: keep focusing;
+			int16_t* ball_position = {0};
+			ball_position = get_ball_position();
+			if(get_ball_movement()[1] < 0 && get_ball_movement()[0]*get_ball_movement()[0] + get_ball_movement()[1]*get_ball_movement()[1] >= KEEPER_INTERCEPT_THRS){
+				float time_to_score = 0; //the time for the ball to arrive at the epuck level (in seconds)
+				time_to_score = -(get_ball_position()[1] - EPUCK_DIAMETER/2 - KEEPER_Y_MARGIN) / get_ball_movement()[1];
+				int16_t intercept_point[2] = {FIELD_WIDTH/2, EPUCK_DIAMETER/2 + KEEPER_Y_MARGIN}; //goal center by default
+				intercept_point[0] = get_ball_position()[0] + time_to_score*get_ball_movement()[0];
+				if(intercept_point[0] > FIELD_WIDTH/2 - GOAL_WIDTH/2 && intercept_point[0] < FIELD_WIDTH/2 + GOAL_WIDTH/2){
+					set_position_obj(intercept_point);
+					refocus_angle = RAD_TO_DEG(atan2f(get_ball_position()[1] - intercept_point[1], get_ball_position()[0] - intercept_point[0]));
+					if(refocus_angle < 0){
+						refocus_angle += 2*PI;
+					}
+					goalkeeper_state = INTERCEPTING;
+				}
+
+			}
+		}else if(get_ball_visibility() == NONE){
+			goalkeeper_state = K_SCANNING;
+		}
+		break;
+	}
+	case INTERCEPTING:{
+		if(get_position_achieved()){
+			set_angle_obj(refocus_angle);
+			goalkeeper_state = K_REFOCUSING;
+		}
+		break;
+	}
+	case K_REFOCUSING:{
+		if(get_direction_achieved()){
+			if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
+				goalkeeper_state = K_FOCUSING;
+			}else if(get_ball_visibility() == NONE){
+				goalkeeper_state = K_SCANNING;
+			}
+		}
+		break;
+	}
+	default: break;
+	}
+
+}
+
+void attack_FSM(bool role_changed){
+
 }
