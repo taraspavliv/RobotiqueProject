@@ -26,7 +26,7 @@
 #define DIRECTION_COARSE_TUNE_SPEED 400
 #define DIRECTION_FINE_TUNE_SPEED 50
 
-#define POSITION_PRECISION 1 //unit: mm
+#define POSITION_PRECISION 2 //unit: mm
 #define POSITION_SPEED_FINE_THRESHOL 5 //unit: mm
 #define POSITION_COARSE_TUNE_SPEED 880
 #define POSITION_FINE_TUNE_SPEED 50
@@ -35,7 +35,7 @@
 
 #define KP 10 //proportional regulator constant
 
-static float my_position[2] = {500, 500}; //(x,y) unit: mm
+static float my_position[2] = {200, 200}; //(x,y) unit: mm
 static float my_angle = 0; //unit: deg
 
 static bool dir_obj_ach = true; //true if the objective(goal) direction has been achieved
@@ -227,6 +227,15 @@ void control_motors_BT(uint16_t* joystick_polar_coord){
 
 	left_motor_set_speed(BT_CONTROL_K*joystick_distance*(cos(angle_rad)+sin(angle_rad)));
 	right_motor_set_speed(BT_CONTROL_K*joystick_distance*(cos(angle_rad)-sin(angle_rad)));
+}
+
+void set_angle_calib(uint16_t angle_calib){
+	my_angle = (float)angle_calib;
+}
+
+void set_position_calib(int16_t position_x, int16_t position_y){
+	my_position[0] = position_x;
+	my_position[1] = position_y;
 }
 
 void motors_controller_start(void){
