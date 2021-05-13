@@ -76,7 +76,7 @@ int main(void)
 	role_selector_start();
 	bt_communication_start();
 	motors_controller_start();
-	//position_calibrator_start();
+	position_calibrator_start();
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
@@ -84,7 +84,6 @@ int main(void)
 	bool smart_attacking = true; //if true, the epuck plays as an attacker, if false he plays as goalkeeper
 	bool role_changed = false;
 	bool smart_role_changed = false;
-	bool calib_called = false;
 
     while (true) {
     	role_changed = (my_role != get_role());
@@ -108,10 +107,6 @@ int main(void)
     		//smart_attacking?attack_FSM(smart_role_changed):keeper_FSM(smart_role_changed);
     	}
     	}
-    	/*if(calib_called == false){
-    		calibrate();
-    		calib_called = true;
-    	}*/
 
 
         chThdSleepMilliseconds(30);
@@ -191,10 +186,8 @@ void keeper_FSM(bool role_changed){
 			set_angle_obj(angle_to_ball);
 		}else if(get_ball_visibility() == FULL){
 			//will the ball score if epuck doesn't move? reposition + set refocus angle: keep focusing;
-			int16_t* ball_position = {0};
-			ball_position = get_ball_position();
 			if(get_ball_movement()[1] < 0 && get_ball_movement()[0]*get_ball_movement()[0] + get_ball_movement()[1]*get_ball_movement()[1] >= KEEPER_INTERCEPT_THRS){
-				float time_to_score = 0; //the time for the ball to arrive at the epuck level (in seconds)
+				float time_to_score = 0; //the time for the ball to arrive at the epuck level (units unknown, but doesn't matter, we just want to project the interception point)
 				time_to_score = -(get_ball_position()[1] - EPUCK_DIAMETER/2 - KEEPER_Y_MARGIN) / get_ball_movement()[1];
 				int16_t intercept_point[2] = {FIELD_WIDTH/2, EPUCK_DIAMETER/2 + KEEPER_Y_MARGIN}; //goal center by default
 				intercept_point[0] = get_ball_position()[0] + time_to_score*get_ball_movement()[0];
@@ -239,8 +232,7 @@ void attack_FSM(bool role_changed){
 	static enum AttackerState attacker_state = A_SCANNING;
 
 	if(role_changed){
-		right_motor_set_speed(880);
-		left_motor_set_speed(-880);
+		set_rotation_speed(880, false);
 		attacker_state = A_SCANNING;
 	}
 	//static bool scanning_left = true; //false-> scanning right
@@ -256,8 +248,6 @@ void attack_FSM(bool role_changed){
 
 	switch(attacker_state){
 	case A_SCANNING:{
-		right_motor_set_speed(880);
-		left_motor_set_speed(-880);
 		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
@@ -272,7 +262,7 @@ void attack_FSM(bool role_changed){
 	case A_FOCUSING:{
 		if(get_ball_visibility() == FULL ){
 			//refocus angle
-			refocus_angle = RAD_TO_DEG(atan2f(FIELD_HEIGHT -get_ball_position()[1], FIELD_WIDTH/2 - get_ball_position()[0]));
+			refocus_angle = RAD_TO_DEG(atan2f(FIELD_HEIGHT - get_ball_position()[1], FIELD_WIDTH/2 - get_ball_position()[0]));
 			if(refocus_angle < 0){
 				refocus_angle += 360;
 			}
@@ -297,8 +287,7 @@ void attack_FSM(bool role_changed){
 			set_position_obj(attack_position);
 			attacker_state = A_POSITIONING;
 		}else if(get_ball_visibility() == NONE ){
-			right_motor_set_speed(880);
-			left_motor_set_speed(-880);
+			set_rotation_speed(880, false);
 			attacker_state = A_SCANNING;
 		}else if(get_ball_visibility() == PARTIAL){
 			float angle_to_ball = 0.0;
@@ -333,8 +322,7 @@ void attack_FSM(bool role_changed){
 				attacker_state = A_FOCUSING;
 			}
 			if(get_ball_visibility() == NONE){
-				right_motor_set_speed(880);
-				left_motor_set_speed(-880);
+				set_rotation_speed(880, false);
 				attacker_state = A_SCANNING;
 			}
 		}

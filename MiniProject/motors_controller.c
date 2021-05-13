@@ -181,6 +181,18 @@ void set_position_obj(int16_t* position){
 	position_objective[1] = position[1];
 }
 
+void set_rotation_speed(uint16_t speed, bool clockwise){
+	dir_obj_ach = true;
+	pos_obj_ach = true;
+	if(clockwise){
+		left_motor_set_speed(speed);
+		right_motor_set_speed(-speed);
+	}else{
+		left_motor_set_speed(-speed);
+		right_motor_set_speed(speed);
+	}
+}
+
 float get_angle_difference(float angle1,float angle2){
 	if(abs(angle1-angle2) < abs(fmod(angle1+180,360) - fmod(angle2+180,360)) ){
 		return angle1 - angle2;

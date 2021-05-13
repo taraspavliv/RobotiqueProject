@@ -19,6 +19,7 @@ int16_t get_self_angle(void);
 
 void set_angle_obj(uint16_t angle);
 void set_position_obj(int16_t* position);
+void set_rotation_speed(uint16_t speed, bool clockwise);
 
 float get_angle_difference(float angle1,float angle2);
 float get_position_difference(float* position1,float* position2);

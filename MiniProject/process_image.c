@@ -209,7 +209,10 @@ int16_t* get_ball_position(void){
 }
 
 int16_t* get_ball_movement(void){
-	return ball_speed_vector_filtered;
+    static int16_t ball_movement_vector_int[2] = {0};
+    ball_movement_vector_int[0] = (int16_t)ball_speed_vector_filtered[0];
+    ball_movement_vector_int[1] = (int16_t)ball_speed_vector_filtered[1];
+    return ball_movement_vector_int;
 }
 
 enum BallVisibility get_ball_visibility(void){
