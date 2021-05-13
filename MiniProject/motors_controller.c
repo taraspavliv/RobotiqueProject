@@ -147,7 +147,10 @@ static THD_FUNCTION(MotorsControl, arg) {
 }
 
 int16_t* get_self_position(void){
-	return (int16_t* )my_position;
+    static int16_t position_in_int[2] = {0};
+    position_in_int[0] = (int16_t)my_position[0];
+    position_in_int[1] = (int16_t)my_position[1];
+    return position_in_int;
 }
 
 int16_t get_self_angle(void){
