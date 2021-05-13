@@ -21,7 +21,7 @@ bool is_number(char chara);
 int16_t get_recieved_integer(char* incoming_message_bfr);
 
 //getters
-uint16_t* get_BT_enemy_position(void);
+int16_t* get_BT_enemy_position(void);
 uint16_t* get_BT_controller_joystick_polar(void);
 bool get_BT_controller_shoot(void);
 bool get_BT_calibrate(void);

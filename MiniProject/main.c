@@ -14,6 +14,7 @@
 #include <leds.h>
 #include <spi_comm.h> //for RGB leds
 #include <selector.h>
+#include <sensors/proximity.h>
 
 #include "role_selector.h"
 #include "process_image.h"
@@ -30,6 +31,9 @@
 #define KEEPER_LEFT 160 //camera angle of view is 45 deg, so by turning to 160 should be able to see up to 180
 #define KEEPER_RIGHT 20
 #define KEEPER_INTERCEPT_THRS 9 //in mm^2*s^-2, we already square 3mm/s for optimisation
+#define KEEPER_MIN_MOVE 10 //in mm, if less than this value, the epuck won't move
+
+#define ATTACKER_DISTANCE_TO_CHARGE_BALL 100 //in mm
 
 enum KeeperState{RETREATING, K_SCANNING, K_FOCUSING, INTERCEPTING, K_REFOCUSING};
 enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, A_REFOCUSING,  SHOOTING};
@@ -37,6 +41,10 @@ enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, A_REFOCUSING,  SHOOTIN
 void attack_FSM(bool role_changed);
 void keeper_FSM(bool role_changed);
 void bt_control(void);
+
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
 
 static void serial_start(void)
 {
@@ -57,7 +65,7 @@ int main(void)
     halInit();
     chSysInit();
     mpu_init();
-    //messagebus_init(); TODO:remove?
+	//messagebus_init(&bus, &bus_lock, &bus_condvar);
 
     //starts the serial communication
     serial_start();
@@ -70,6 +78,7 @@ int main(void)
 	motors_init();
 	//for rgb leds
 	//spi_comm_start();
+	//proximity_start();
 
 	//stars the threads for the processing of the image
 	process_image_start();
@@ -84,6 +93,7 @@ int main(void)
 	bool smart_attacking = true; //if true, the epuck plays as an attacker, if false he plays as goalkeeper
 	bool role_changed = false;
 	bool smart_role_changed = false;
+
 
     while (true) {
     	role_changed = (my_role != get_role());
@@ -103,11 +113,35 @@ int main(void)
     		break;
     	}
     	case SMART:{
-    		//if sees ball, checks if should switch state, (re)sets smart_role_changed
-    		//smart_attacking?attack_FSM(smart_role_changed):keeper_FSM(smart_role_changed);
-    	}
-    	}
+    		//if sees the ball, decides if it's better to attack or defend
+    		if(get_ball_visibility() == FULL){
+    			int16_t self_attacking_score = 0;
+    			int16_t enemy_goal_center_point[2]= {0};
+    			enemy_goal_center_point[0] = FIELD_WIDTH/2;
+    			enemy_goal_center_point[1] = FIELD_HEIGHT;
+    			self_attacking_score = attacking_score(get_self_position(), get_ball_position(), enemy_goal_center_point);
 
+    			//from the enemy point of view, we should transform the coordinates of the ball
+    			int16_t enemy_attacking_score = 0;
+    			int16_t ball_in_enemy_coordinates[2] = {0};
+    			ball_in_enemy_coordinates[0] = FIELD_WIDTH - get_ball_position()[0];
+    			ball_in_enemy_coordinates[1] = FIELD_HEIGHT - get_ball_position()[1];
+    			enemy_attacking_score = attacking_score(get_BT_enemy_position(), ball_in_enemy_coordinates, enemy_goal_center_point);
+
+    			smart_role_changed = (smart_attacking == (self_attacking_score > enemy_attacking_score)); //if it was smart attacking and still is, role unchanged
+    			smart_attacking = self_attacking_score > enemy_attacking_score;
+    		}
+    		if(smart_attacking){
+    			attack_FSM(smart_role_changed);
+    			smart_role_changed = false;
+    		}else{
+    			keeper_FSM(smart_role_changed);
+    			smart_role_changed = false;
+    		}
+    		break;
+    	}
+    	default: break;
+    	}
 
         chThdSleepMilliseconds(30);
     }
@@ -192,12 +226,14 @@ void keeper_FSM(bool role_changed){
 				int16_t intercept_point[2] = {FIELD_WIDTH/2, EPUCK_DIAMETER/2 + KEEPER_Y_MARGIN}; //goal center by default
 				intercept_point[0] = get_ball_position()[0] + time_to_score*get_ball_movement()[0];
 				if(intercept_point[0] > FIELD_WIDTH/2 - GOAL_WIDTH/2 && intercept_point[0] < FIELD_WIDTH/2 + GOAL_WIDTH/2){
-					set_position_obj(intercept_point);
-					refocus_angle = RAD_TO_DEG(atan2f(get_ball_position()[1] - intercept_point[1], get_ball_position()[0] - intercept_point[0]));
-					if(refocus_angle < 0){
-						refocus_angle += 360;
+					if(intercept_point[0] > get_self_position()[0] + KEEPER_MIN_MOVE || intercept_point[0] < get_self_position()[0] - KEEPER_MIN_MOVE){
+						set_position_obj(intercept_point);
+						refocus_angle = RAD_TO_DEG(atan2f(get_ball_position()[1] - intercept_point[1], get_ball_position()[0] - intercept_point[0]));
+						if(refocus_angle < 0){
+							refocus_angle += 360;
+						}
+						goalkeeper_state = INTERCEPTING;
 					}
-					goalkeeper_state = INTERCEPTING;
 				}
 
 			}
@@ -267,8 +303,8 @@ void attack_FSM(bool role_changed){
 				refocus_angle += 360;
 			}
 
-			attack_position[0]= get_ball_position()[0]-cos(refocus_angle)*80;
-			attack_position[1]= get_ball_position()[1]-sin(refocus_angle)*80;
+			attack_position[0] = get_ball_position()[0] - cosf(DEG_TO_RAD(refocus_angle))*ATTACKER_DISTANCE_TO_CHARGE_BALL;
+			attack_position[1] = get_ball_position()[1] - sinf(DEG_TO_RAD(refocus_angle))*ATTACKER_DISTANCE_TO_CHARGE_BALL;
 
 			if(attack_position[0]<=40){
 				attack_position[0]=40;
@@ -337,4 +373,40 @@ void attack_FSM(bool role_changed){
 	}
 	default :break;	
 	}
+}
+
+#define K1 2000.
+#define K2 1000.
+#define K3 0.3333333
+#define K4 100.
+
+int16_t attacking_score(int16_t* player_pos, int16_t* ball_pos, int16_t* goal_pos){
+	//these functions where found with a simulation to get an attacking score that "seems" right, don't overthink it
+	uint16_t dist_to_ball_score = 0; //if player is close to ball -> high attacking score
+	uint16_t ball_dist_to_goal_score = 0; //if ball is close to enemy goal -> high attacking score
+	int16_t alignement_player_ball_goal_score = 0; //if player is well aligned with the ball and the enemy goal -> high score
+
+	dist_to_ball_score = (uint16_t)(K1 / sqrtf(distance_between(ball_pos, player_pos)));
+	ball_dist_to_goal_score = (uint16_t)(K2 / distance_between(ball_pos, player_pos));
+	float alignement_cos = 0.; //cos of the angle player-ball-goal
+	//cosinus theorem:
+	alignement_cos = (distance_squared(ball_pos, player_pos) + distance_squared(ball_pos, goal_pos) - distance_squared(player_pos,goal_pos)) /
+					 (2*distance_between(ball_pos, player_pos)*distance_between(ball_pos, goal_pos));
+	float temp_var = 0;
+	temp_var = 2*acosf(alignement_cos) - PI;
+	alignement_player_ball_goal_score = (int16_t)((K3 + dist_to_ball_score/K4) * temp_var * temp_var * temp_var);
+
+	return dist_to_ball_score + ball_dist_to_goal_score + alignement_player_ball_goal_score;
+}
+
+float distance_between(int16_t* point1, int16_t* point2){
+	float distance = 0;
+	distance = sqrtf( (point1[0]-point2[0])*(point1[0]-point2[0]) + (point1[1]-point2[1])*(point1[1]-point2[1]) );
+	return distance;
+}
+
+uint32_t distance_squared(int16_t* point1, int16_t* point2){
+	uint32_t distance_squared = 0;
+	distance_squared = (point1[0]-point2[0])*(point1[0]-point2[0]) + (point1[1]-point2[1])*(point1[1]-point2[1]);
+	return distance_squared;
 }

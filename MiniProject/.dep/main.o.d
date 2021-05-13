@@ -148,7 +148,8 @@ build/obj/main.o: main.c \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h \
  ../../lib/e-puck2_main-processor/src/leds.h \
  ../../lib/e-puck2_main-processor/src/spi_comm.h \
- ../../lib/e-puck2_main-processor/src/selector.h role_selector.h \
+ ../../lib/e-puck2_main-processor/src/selector.h \
+ ../../lib/e-puck2_main-processor/src/sensors/proximity.h role_selector.h \
  process_image.h bt_communication.h position_calibrator.h \
  motors_controller.h
 
@@ -455,6 +456,8 @@ main.h:
 ../../lib/e-puck2_main-processor/src/spi_comm.h:
 
 ../../lib/e-puck2_main-processor/src/selector.h:
+
+../../lib/e-puck2_main-processor/src/sensors/proximity.h:
 
 role_selector.h:
 

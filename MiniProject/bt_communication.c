@@ -31,7 +31,7 @@
 #define ASCII_OF_ZERO 48
 
 //expected recieved data
-static uint16_t enemy_position[2] = {0,0}; // (x,y)
+static int16_t enemy_position[2] = {0,0}; // (x,y)
 static uint16_t ctrl_joystick_polar[2] = {0,0}; //(distance, angle)
 static bool ctrl_shoot = false;
 static bool calibrate = false;
@@ -154,7 +154,7 @@ int16_t get_recieved_integer(char* incoming_message_bfr){
 	return k;
 }
 
-uint16_t* get_BT_enemy_position(void){ return enemy_position; }
+int16_t* get_BT_enemy_position(void){ return enemy_position; }
 
 uint16_t* get_BT_controller_joystick_polar(void){ return ctrl_joystick_polar; }
 
