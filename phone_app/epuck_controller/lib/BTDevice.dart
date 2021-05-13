@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:async';
+import 'globals.dart' as globals;
 import 'package:epuck_controller/controller.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 
@@ -21,6 +22,9 @@ class BTDevice{
   int ctrlDist = 0;
   bool ctrlHit = false;
   Timer periodicCtrl;
+  int positionX = 0;
+  int positionY = 0;
+  int numPlayer = 0;
 
   BluetoothConnection connection;
   bool isConnecting = true;
@@ -31,8 +35,10 @@ class BTDevice{
     this.deviceStatus = Status.paired;
     this.bluedevice = bluedevice;
     //this.deviceName = deviceName;
-    periodicCtrl = Timer.periodic(Duration(milliseconds: 50), (timer) {
-      sendCtrlData();
+    periodicCtrl = Timer.periodic(Duration(milliseconds: 100), (timer) {
+      if(this.deviceStatus == Status.connected || this.deviceStatus == Status.controlled){
+        sendCtrlData();
+      }
     });
   }
 
@@ -45,6 +51,7 @@ class BTDevice{
     }
     this.connection.dispose();
     this.connection = null;
+    globals.connectedDevices = globals.connectedDevices - 1;
   }
 
   _getBTConnection(){
@@ -89,7 +96,25 @@ class BTDevice{
       }
     }
     var decoded = utf8.decode(buffer);
-    print(decoded);
+    print("recieved:$decoded");
+
+    for(int i=0; i<decoded.length; i++) {
+      if((decoded[i] == 'x' || decoded[i] == 'y') && decoded[i+1] == ':'){
+        for(int j=i+1; j<i+10; j++){
+          if(decoded[j] == ' '){
+            if(decoded[i] == 'x'){
+              positionX = int.parse(decoded.substring(i+2, j));
+            }else if(decoded[i] == 'y'){
+              positionY = int.parse(decoded.substring(i+2, j));
+            }
+            break;
+          }
+        }
+      }
+    }
+    //print("x:$positionX");
+    //print("y:$positionY");
+
   }
 
   void _sendMessage(String text) async {
@@ -113,11 +138,17 @@ class BTDevice{
       if(this.ctrlHit == true){
         this.ctrlHit = false;
         ctrlSendString = ctrlSendString + ' h';
-        //_sendMessage(' h ');
       }
+    }
+    if(this.numPlayer == 0 && globals.connectedDevices == 2){
+      ctrlSendString = ctrlSendString + ' u:${globals.player1.positionX} v:${globals.player1.positionY}';
+    }else if(this.numPlayer == 1){
+      ctrlSendString = ctrlSendString + ' u:${globals.player0.positionX} v:${globals.player0.positionY}';
     }
     ctrlSendString =  ctrlSendString + ' -';
     _sendMessage(ctrlSendString);
+    numPlayer == 0? print("player0"):print("player1");
+    print(ctrlSendString);
   }
 
 }
@@ -185,15 +216,26 @@ class _DeviceCardState extends State<DeviceCard> {
                     widget.device.deviceStatus = Status.paired;
                   }else if(widget.device.deviceStatus == Status.paired){
                     //connect
-                    widget.device._getBTConnection();
-                    setState(() {});
-                    widget.device.deviceStatus = Status.connected;
+                    if(globals.connectedDevices < 2){
+                      if(globals.connectedDevices == 0){
+                        globals.player0 = widget.device;
+                        widget.device.numPlayer = 0;
+                      }else{
+                        globals.player1 = widget.device;
+                        widget.device.numPlayer = 1;
+                      }
+                      widget.device._getBTConnection();
+                      globals.connectedDevices = globals.connectedDevices + 1;
+                      print("${globals.connectedDevices}");
+                      setState(() {});
+                      widget.device.deviceStatus = Status.connected;
+                    }
                   }else if(widget.device.deviceStatus == Status.connected){
                     //set as controlled
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => Controller(widget.device),
+                          builder: (context) => Controller(widget.device.numPlayer)/*widget.device.numPlayer == 0? Controller(globals.player0): Controller(globals.player1)*/,
                         ));
                     widget.device.deviceStatus = Status.controlled;
                   }

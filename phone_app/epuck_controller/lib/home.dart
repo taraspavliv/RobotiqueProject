@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'globals.dart' as globals;
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
@@ -33,8 +34,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
 
   List<BTDevice> BTdevices = [];
   BluetoothState _bluetoothState = BluetoothState.UNKNOWN;
-  List<BluetoothDevice> devices = List<BluetoothDevice>();
-
 
   //-discovered
   List<_DeviceWithAvailability> AVdevices = List<_DeviceWithAvailability>();
@@ -44,12 +43,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   bool _isDiscovering;
 
   @override
-  void initState(){
+  void initState(){ //constructor
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _getBTState();
     _stateChangeListener();
-    //_listBondedDevices();
 
     _isDiscovering = widget.checkAvailability;
 
@@ -93,6 +91,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
               if (_device.device == r.device) {
                 _device.availability = _DeviceAvailability.yes;
                 _device.rssi = r.rssi;
+                //creates cards for paired and discovered devices
                 BTdevices.add(BTDevice(r.device));
               }
             }
@@ -109,62 +108,39 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
   }
 
   @override
-  void dispose(){
+  void dispose(){ //destructor
     WidgetsBinding.instance.removeObserver(this);
     _discoveryStreamSubscription?.cancel();
     super.dispose();
   }
 
-  //@override
-  /*void didChangeAppLifeCycleState(AppLifecycleState state) {
-    if(state.index == 0){
-      if(_bluetoothState.isEnabled){
-        _listBondedDevices();
-      }
-    }
-  }*/
-
-  _getBTState(){
+  _getBTState(){ //checks if bluetooth is on
     FlutterBluetoothSerial.instance.state.then((state){
       _bluetoothState = state;
-      /*if(_bluetoothState.isEnabled){
-        _listBondedDevices();
-      }*/
       setState(() {});
     });
   }
 
-  _stateChangeListener() {
+  _stateChangeListener() { //checks if bluetooth state changes
     FlutterBluetoothSerial.instance.onStateChanged().listen((BluetoothState state) {
       _bluetoothState = state;
-      if(_bluetoothState.isEnabled == false){
-        devices.clear();
-      }
       setState(() {
         print("State enabled? ${state.isEnabled}");
       });
     });
   }
 
-  /*_listBondedDevices(){
-    FlutterBluetoothSerial.instance.getBondedDevices().then((List<BluetoothDevice> bondedDevices){
-      devices = bondedDevices;
-      setState(() {});
-
-    });
-  }*/
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { //widget for the display
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar( //the top bar
         title: Text(_isDiscovering ? 'Looking...' :'E-puck  Football  Tool', style: TextStyle(color: Colors.black,)),
         centerTitle: true,
         backgroundColor: Colors.lightGreen[600],
       ),
-      body: ListView(
-        children: BTdevices.map((device) =>  DeviceCard(device)).toList(),
+      body: ListView( //lists the paired and visible devices
+        children: BTdevices.map((device) => DeviceCard(device)).toList(),
       ),
       floatingActionButton: Container(
         height: 70.0,
@@ -190,7 +166,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
               for(int i=0; i < AVdevices.length; ++i){
                 AVdevices[i].availability ==_DeviceAvailability.yes? print("${AVdevices[i].device.name}") : print("oh no");
               }
-              //create cards of devices
             }
 
           },

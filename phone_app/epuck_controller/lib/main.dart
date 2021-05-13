@@ -8,6 +8,6 @@ void main() => runApp(MaterialApp(
   initialRoute: '/',
   routes: {
     '/': (context) => Home(),
-    '/controller': (context) => Controller(BTDevice(null)),
+    '/controller': (context) => Controller(0),
   }
 ));
