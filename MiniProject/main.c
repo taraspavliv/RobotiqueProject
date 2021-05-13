@@ -249,8 +249,15 @@ void attack_FSM(bool role_changed){
 	static int16_t attack_position[2]={0,0};
 	static int16_t refocus_angle = 0;
 
+	set_led(0, attacker_state == A_SCANNING);
+	set_led(1, attacker_state == A_FOCUSING);
+	set_led(2, attacker_state == A_POSITIONING);
+	set_led(3, attacker_state == A_REFOCUSING);
+
 	switch(attacker_state){
 	case A_SCANNING:{
+		right_motor_set_speed(880);
+		left_motor_set_speed(-880);
 		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
@@ -270,28 +277,28 @@ void attack_FSM(bool role_changed){
 				refocus_angle += 360;
 			}
 
-			attack_position[0]= get_ball_position()[0]+cos(refocus_angle)*80;
-			attack_position[1]= get_ball_position()[1]+sin(refocus_angle)*80;
+			attack_position[0]= get_ball_position()[0]-cos(refocus_angle)*80;
+			attack_position[1]= get_ball_position()[1]-sin(refocus_angle)*80;
 
 			if(attack_position[0]<=40){
 				attack_position[0]=40;
-				refocus_angle=0;
+				refocus_angle=90;
 			}else if(attack_position[0]>=560){
 				attack_position[0]=560;
-				refocus_angle=0;
+				refocus_angle=90;
 			}
 			if(attack_position[1]<=40){
 				attack_position[1]=40;
-				refocus_angle=90;
+				refocus_angle=0;
 			}else if(attack_position[1]>=960){
 				attack_position[1]=960;
-				refocus_angle=90;
+				refocus_angle=0;
 			}
 			set_position_obj(attack_position);
 			attacker_state = A_POSITIONING;
 		}else if(get_ball_visibility() == NONE ){
-			right_motor_set_speed(800);
-			left_motor_set_speed(-800);
+			right_motor_set_speed(880);
+			left_motor_set_speed(-880);
 			attacker_state = A_SCANNING;
 		}else if(get_ball_visibility() == PARTIAL){
 			float angle_to_ball = 0.0;
@@ -326,8 +333,8 @@ void attack_FSM(bool role_changed){
 				attacker_state = A_FOCUSING;
 			}
 			if(get_ball_visibility() == NONE){
-				right_motor_set_speed(800);
-				left_motor_set_speed(-800);
+				right_motor_set_speed(880);
+				left_motor_set_speed(-880);
 				attacker_state = A_SCANNING;
 			}
 		}
@@ -335,7 +342,7 @@ void attack_FSM(bool role_changed){
 	}
 	case SHOOTING:{
 		motor_shoot();
-		chThdSleepMilliseconds(700);
+		chThdSleepMilliseconds(900);
 		reset_motor_shoot();
 		attacker_state= A_FOCUSING;
 		break;
