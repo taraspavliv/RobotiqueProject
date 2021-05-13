@@ -8,7 +8,11 @@
 #ifndef POSITION_CALIBRATOR_H_
 #define POSITION_CALIBRATOR_H_
 
+#define FIELD_WIDTH 600 //in mm
+#define FIELD_HEIGHT 1000 //in mm
+
 void position_calibrator_start(void);
-void invers_speed(int sens);
+
+void calibrate(void);
 
 #endif /* POSITION_CALIBRATOR_H_ */
