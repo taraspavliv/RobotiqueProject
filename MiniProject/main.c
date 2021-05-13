@@ -21,9 +21,9 @@
 #include "position_calibrator.h"
 #include "motors_controller.h"
 
-#define FIELD_WIDTH 600 //in mm
-#define FIELD_HEIGHT 900 //in mm
 #define GOAL_WIDTH 300 //in mm
+#define FIELD_WIDTH 600 //in mm
+#define FIELD_HEIGHT 1000 //in mm
 #define EPUCK_DIAMETER 80 //in mm
 #define KEEPER_Y_MARGIN 10 //in mm
 
@@ -32,7 +32,7 @@
 #define KEEPER_INTERCEPT_THRS 9 //in mm^2*s^-2, we already square 3mm/s for optimisation
 
 enum KeeperState{RETREATING, K_SCANNING, K_FOCUSING, INTERCEPTING, K_REFOCUSING};
-enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, SHOOTING};
+enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, A_REFOCUSING,  SHOOTING};
 
 void attack_FSM(bool role_changed);
 void keeper_FSM(bool role_changed);
@@ -76,6 +76,7 @@ int main(void)
 	role_selector_start();
 	bt_communication_start();
 	motors_controller_start();
+	position_calibrator_start();
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
@@ -84,6 +85,7 @@ int main(void)
 	bool role_changed = false;
 	bool smart_role_changed = false;
 
+	bool calib_called = false;
     while (true) {
     	role_changed = (my_role != get_role());
     	my_role = get_role();
@@ -106,6 +108,10 @@ int main(void)
     		//smart_attacking?attack_FSM(smart_role_changed):keeper_FSM(smart_role_changed);
     	}
     	}
+    	/*if(calib_called == false){
+    		calibrate();
+    		calib_called = true;
+    	}*/
 
 
         chThdSleepMilliseconds(30);
@@ -161,7 +167,7 @@ void keeper_FSM(bool role_changed){
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[1]));
 			if(angle_to_ball < 0){
-				angle_to_ball += 2*PI;
+				angle_to_ball += 360;
 			}
 			set_angle_obj(angle_to_ball);
 			goalkeeper_state = K_FOCUSING;
@@ -179,7 +185,7 @@ void keeper_FSM(bool role_changed){
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
 			if(angle_to_ball < 0){
-				angle_to_ball += 2*PI;
+				angle_to_ball += 360;
 			}
 			set_angle_obj(angle_to_ball);
 		}else if(get_ball_visibility() == FULL){
@@ -195,7 +201,7 @@ void keeper_FSM(bool role_changed){
 					set_position_obj(intercept_point);
 					refocus_angle = RAD_TO_DEG(atan2f(get_ball_position()[1] - intercept_point[1], get_ball_position()[0] - intercept_point[0]));
 					if(refocus_angle < 0){
-						refocus_angle += 2*PI;
+						refocus_angle += 360;
 					}
 					goalkeeper_state = INTERCEPTING;
 				}
@@ -229,5 +235,94 @@ void keeper_FSM(bool role_changed){
 }
 
 void attack_FSM(bool role_changed){
+	static enum AttackerState attacker_state = A_SCANNING;
 
-}
+	if(role_changed){
+		right_motor_set_speed(880);
+		left_motor_set_speed(-880);
+		attacker_state = A_SCANNING;
+	}
+	//static bool scanning_left = true; //false-> scanning right
+	//static int16_t refocus_angle = 0;
+
+	int16_t position[2]={0,0};
+	float ball_angle = 0.0;
+	ball_angle = RAD_TO_DEG(atan2f(FIELD_WIDTH/2 -get_ball_position()[1], FIELD_HEIGHT - get_ball_position()[0]));
+	if(ball_angle < 0){
+		ball_angle += 360;
+	}
+
+	switch(attacker_state){
+	case A_SCANNING:{
+		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
+			attacker_state = A_FOCUSING;
+		}
+		break;
+	}
+	case A_FOCUSING:{
+		if(get_ball_visibility() == FULL ){
+			position= ball_position_filtered();
+			position[0]= position[0]+cos(ball_angle)*80;
+			position[1]= position[1]+sin(ball_angle)*80;
+			if(position[0]<=40){
+				position[0]=40;
+				ball_angle=0;
+			}
+			if(position[0]>=560){
+				position[0]=560;
+				ball_angle=0;
+				ball_angle=0;
+			}
+			if(position[1]<=40){
+				position[1]=40;
+				ball_angle=90;
+			}
+			if(position[1]>=960){
+				position[1]=960;
+				ball_angle=90;
+			}
+			set_position_obj(position);
+			attacker_state = A_POSITIONING;
+		}
+		if(get_ball_visibility() == NONE ){
+				attacker_state = A_SCANNING;
+		      	right_motor_set_speed(800);
+		        left_motor_set_speed(-800);
+				}
+		break;
+	}
+	case A_POSITIONING:{
+		if( get_position_achieved()){
+			set_angle_obj(ball_angle);
+			attacker_state=SHOOTING;
+		}
+		break;
+	}
+	case A_REFOCUSING:{
+		if(get_ball_visibility() == FULL){
+			attacker_state = SHOOTING;
+		}
+		if(get_ball_visibility() == PARTIAL){
+			attacker_state = A_FOCUSING;
+		}
+		if(get_ball_visibility() == NONE){
+			attacker_state = A_SCANNING;
+	      	right_motor_set_speed(800);
+	        left_motor_set_speed(-800);
+		}
+
+	break;
+	}
+	case SHOOTING:{
+		if(get_direction_achieved()){
+			motor_shoot();
+			chThdSleepMilliseconds(700); //TODO: this works?, if not FSM return bools if shooting
+			reset_motor_shoot();
+			attacker_state= A_FOCUSING;
+			}
+		break;
+		}
+	default :break;	
+	}
+	
+	}
