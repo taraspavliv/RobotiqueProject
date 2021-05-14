@@ -21,10 +21,9 @@
 #include "bt_communication.h"
 #include "position_calibrator.h"
 #include "motors_controller.h"
+#include "collision_manager.h"
 
 #define GOAL_WIDTH 300 //in mm
-#define FIELD_WIDTH 600 //in mm
-#define FIELD_HEIGHT 1000 //in mm
 #define EPUCK_DIAMETER 80 //in mm
 #define KEEPER_Y_MARGIN 10 //in mm
 
@@ -33,7 +32,10 @@
 #define KEEPER_INTERCEPT_THRS 9 //in mm^2*s^-2, we already square 3mm/s for optimisation
 #define KEEPER_MIN_MOVE 10 //in mm, if less than this value, the epuck won't move
 
-#define ATTACKER_DISTANCE_TO_CHARGE_BALL 100 //in mm
+#define ATTACKER_DISTANCE_TO_CHARGE_BALL 120 //in mm
+
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
 
 enum KeeperState{RETREATING, K_SCANNING, K_FOCUSING, INTERCEPTING, K_REFOCUSING};
 enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, A_REFOCUSING,  SHOOTING};
@@ -41,10 +43,6 @@ enum AttackerState{A_SCANNING, A_FOCUSING, A_POSITIONING, A_REFOCUSING,  SHOOTIN
 void attack_FSM(bool role_changed);
 void keeper_FSM(bool role_changed);
 void bt_control(void);
-
-messagebus_t bus;
-MUTEX_DECL(bus_lock);
-CONDVAR_DECL(bus_condvar);
 
 static void serial_start(void)
 {
@@ -65,7 +63,8 @@ int main(void)
     halInit();
     chSysInit();
     mpu_init();
-	//messagebus_init(&bus, &bus_lock, &bus_condvar);
+	/** Inits the Inter Process Communication bus. */
+	messagebus_init(&bus, &bus_lock, &bus_condvar);
 
     //starts the serial communication
     serial_start();
@@ -78,7 +77,7 @@ int main(void)
 	motors_init();
 	//for rgb leds
 	//spi_comm_start();
-	//proximity_start();
+	proximity_start();
 
 	//stars the threads for the processing of the image
 	process_image_start();
@@ -86,6 +85,8 @@ int main(void)
 	bt_communication_start();
 	motors_controller_start();
 	position_calibrator_start();
+	collision_manager_start();
+
 
 	//set_rgb_led(1,200,200,0);
     /* Infinite loop. */
@@ -94,9 +95,16 @@ int main(void)
 	bool role_changed = false;
 	bool smart_role_changed = false;
 
-
+	bool test_command_sent = false; //TODO:remove
+	uint16_t posititon_test[2] = {0};
+	posititon_test[0] = 400;
+	posititon_test[1] = 200;
     while (true) {
-    	role_changed = (my_role != get_role());
+    	if(test_command_sent == false){
+    		test_command_sent = true;
+    		set_position_obj(posititon_test);
+    	}
+    	/*role_changed = (my_role != get_role());
     	my_role = get_role();
 
     	switch(my_role){
@@ -141,7 +149,7 @@ int main(void)
     		break;
     	}
     	default: break;
-    	}
+    	}*/
 
         chThdSleepMilliseconds(30);
     }
@@ -202,7 +210,7 @@ void keeper_FSM(bool role_changed){
 			set_angle_obj(angle_to_ball);
 			goalkeeper_state = K_FOCUSING;
 		}else{
-			if(get_direction_achieved()){
+			if(get_angle_achieved()){
 				//scans to the other side when turned to the right angle
 				scanning_left == true ? set_angle_obj(KEEPER_RIGHT) : set_angle_obj(KEEPER_LEFT);
 				scanning_left = !scanning_left;
@@ -250,7 +258,7 @@ void keeper_FSM(bool role_changed){
 		break;
 	}
 	case K_REFOCUSING:{
-		if(get_direction_achieved()){
+		if(get_angle_achieved()){
 			if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
 				goalkeeper_state = K_FOCUSING;
 			}else if(get_ball_visibility() == NONE){
@@ -344,7 +352,7 @@ void attack_FSM(bool role_changed){
 		break;
 	}
 	case A_REFOCUSING:{
-		if(get_direction_achieved()){
+		if(get_angle_achieved()){
 			if(get_ball_visibility() == FULL){
 				attacker_state = SHOOTING;
 			}

@@ -5,7 +5,7 @@
  *      Author: taras
  */
 #include "ch.h"
-#include "selector.h"
+#include <selector.h>
 
 #include "role_selector.h"
 

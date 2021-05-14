@@ -84,7 +84,7 @@ static THD_FUNCTION(position_calibrator, arg) {
 				break;
 			}
 			case TURNING_TO_WALL_Y: {
-				if(get_direction_achieved()){
+				if(get_angle_achieved()){
 					right_motor_set_speed(CALIBRATION_SPEED);//the robot starts rotating
 					left_motor_set_speed(-CALIBRATION_SPEED);
 					minimal_distance = MINIMAL_DIST;
@@ -104,7 +104,7 @@ static THD_FUNCTION(position_calibrator, arg) {
 				break;
 			}
 			case TURNING_TO_WALL_X: {
-				if(get_direction_achieved()){
+				if(get_angle_achieved()){
 					minimal_distance = MINIMAL_DIST;
 					calibration_state=CALIBRATING_PHASE_2;
 				}

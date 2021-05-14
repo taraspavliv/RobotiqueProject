@@ -15,6 +15,7 @@ CSRC += ./main.c \
 		./position_calibrator.c \
 		./motors_controller.c \
 		./role_selector.c \
+		./collision_manager.c \
 
 #Header folders to include
 INCDIR += 

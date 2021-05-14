@@ -9,6 +9,8 @@ extern "C" {
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
 
+#define FIELD_WIDTH 600 //in mm
+#define FIELD_HEIGHT 1000 //in mm
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

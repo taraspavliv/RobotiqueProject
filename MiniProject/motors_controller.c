@@ -38,11 +38,13 @@
 static float my_position[2] = {200, 200}; //(x,y) unit: mm
 static float my_angle = 0; //unit: deg
 
-static bool dir_obj_ach = true; //true if the objective(goal) direction has been achieved
+static bool angle_obj_ach = true; //true if the objective(goal) direction has been achieved
 static bool pos_obj_ach = true; //true if the objective(goal) position has been achieved
+static bool interm_ach = true; //true if the intermediate position has been achieved
 
 static float position_objective[2] = {0,0};
 static float angle_objective = 0;
+static float intermediate_position[2] = {0,0};
 
 static bool shooting = false;
 
@@ -86,11 +88,11 @@ static THD_FUNCTION(MotorsControl, arg) {
 	 rmotor_last_pos = right_motor_get_pos();
 
 	 //handles objectives achievement
-	 if(dir_obj_ach == false){
+	 if(angle_obj_ach == false){ //TODO restructurate the code
 		 angle_difference = get_angle_difference(my_angle, angle_objective);
 		 //chprintf((BaseSequentialStream *) &SDU1, "pos_dif:%f- \n\r", angle_difference);
 		 if(abs(angle_difference) < DIRECTION_PRECISION){
-			 dir_obj_ach = true;
+			 angle_obj_ach = true;
 			 left_motor_set_speed(0);
 			 right_motor_set_speed(0);
 		 }else{
@@ -109,6 +111,32 @@ static THD_FUNCTION(MotorsControl, arg) {
 				 }else{
 					 left_motor_set_speed(-(int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
 					 right_motor_set_speed((int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
+				 }
+			 }
+		 }
+	 }else if(interm_ach == false){
+		 position_difference = get_position_difference(my_position, intermediate_position);
+		 if(abs(position_difference) < POSITION_PRECISION){
+			 interm_ach = true;
+			 left_motor_set_speed(0);
+			 right_motor_set_speed(0);
+		 }else{
+			 angle_regulator = get_angle_difference(my_angle, RAD_TO_DEG(atan2f(intermediate_position[1]-my_position[1], intermediate_position[0]-my_position[0])));
+			 if(position_difference > 0){
+				 if(position_difference > POSITION_SPEED_FINE_THRESHOL){
+					 left_motor_set_speed(POSITION_COARSE_TUNE_SPEED + KP*angle_regulator);
+					 right_motor_set_speed(POSITION_COARSE_TUNE_SPEED - KP*angle_regulator);
+				 }else{
+					 left_motor_set_speed((int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+					 right_motor_set_speed((int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+				 }
+			 }else{
+				 if(position_difference < -POSITION_SPEED_FINE_THRESHOL){
+					 left_motor_set_speed(-POSITION_COARSE_TUNE_SPEED - KP*angle_regulator);
+					 right_motor_set_speed(-POSITION_COARSE_TUNE_SPEED + KP*angle_regulator);
+				 }else{
+					 left_motor_set_speed(-(int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+					 right_motor_set_speed(-(int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
 				 }
 			 }
 		 }
@@ -163,7 +191,7 @@ void shoot(void){
 }
 
 void set_angle_obj(uint16_t angle){
-	dir_obj_ach = false;
+	angle_obj_ach = false;
 	angle_objective = (float)angle;
 }
 
@@ -174,7 +202,7 @@ void set_distance_forward(float distance){
 }
 
 void set_position_obj(int16_t* position){
-	dir_obj_ach = false;
+	angle_obj_ach = false;
 	pos_obj_ach = false;
 	angle_objective = RAD_TO_DEG(atan2f((float)(position[1])-my_position[1], (float)(position[0])-my_position[0]));
 	position_objective[0] = position[0];
@@ -182,7 +210,7 @@ void set_position_obj(int16_t* position){
 }
 
 void set_rotation_speed(uint16_t speed, bool clockwise){
-	dir_obj_ach = true;
+	angle_obj_ach = true;
 	pos_obj_ach = true;
 	if(clockwise){
 		left_motor_set_speed(speed);
@@ -191,6 +219,21 @@ void set_rotation_speed(uint16_t speed, bool clockwise){
 		left_motor_set_speed(-speed);
 		right_motor_set_speed(speed);
 	}
+}
+
+void set_intermediate_point(int16_t* position){
+	interm_ach = false;
+	angle_obj_ach = false;
+	angle_objective = RAD_TO_DEG(atan2f((float)(position[1])-my_position[1], (float)(position[0])-my_position[0]));
+	intermediate_position[0] = position[0];
+	intermediate_position[1] = position[1];
+}
+
+void continue_main_obj(void){
+	int16_t position[2] = {0};
+	position[0] = position_objective[0];
+	position[1] = position_objective[1];
+	set_position_obj(position);
 }
 
 float get_angle_difference(float angle1,float angle2){
@@ -213,12 +256,25 @@ float get_position_difference(float* position1,float* position2){
 	}
 }
 
-bool get_direction_achieved(void){
-	return dir_obj_ach;
+bool get_angle_achieved(void){
+	return angle_obj_ach;
 }
 
 bool get_position_achieved(void){
 	return pos_obj_ach;
+}
+
+bool get_intermediate_achieved(void){
+	return interm_ach;
+}
+
+uint8_t closest_point_to_obj(int16_t* point1, int16_t* point2){
+	if( (position_objective[0] - point1[0])*(position_objective[0] - point1[0]) + (position_objective[1] - point1[1])*(position_objective[1] - point1[1]) <=
+		(position_objective[0] - point2[0])*(position_objective[0] - point2[0]) + (position_objective[1] - point2[1])*(position_objective[1] - point2[1])	){
+		return 1;
+	}else{
+		return 2;
+	}
 }
 
 void motor_shoot(void){
