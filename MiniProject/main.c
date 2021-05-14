@@ -100,11 +100,8 @@ int main(void)
 	posititon_test[0] = 400;
 	posititon_test[1] = 200;
     while (true) {
-    	if(test_command_sent == false){
-    		test_command_sent = true;
-    		set_position_obj(posititon_test);
-    	}
-    	/*role_changed = (my_role != get_role());
+
+    	role_changed = (my_role != get_role());
     	my_role = get_role();
 
     	switch(my_role){
@@ -149,7 +146,7 @@ int main(void)
     		break;
     	}
     	default: break;
-    	}*/
+    	}
 
         chThdSleepMilliseconds(30);
     }

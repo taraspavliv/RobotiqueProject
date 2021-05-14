@@ -19,7 +19,7 @@
 //TODO
 #include <chprintf.h>
 
-#define CLOSE_THRS 50
+#define CLOSE_THRS 20
 #define INTERMEDIATE_POINT_DIST 50 // in mm
 #define ANGLE_BETWEEN_SENSORS 36 //in deg
 #define FRONT_SENSORS 6
