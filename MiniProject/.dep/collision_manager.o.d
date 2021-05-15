@@ -138,8 +138,7 @@ build/obj/collision_manager.o: collision_manager.c \
  ../../lib/e-puck2_main-processor/src/camera/po8030.h \
  ../../lib/e-puck2_main-processor/src/parameter/parameter.h \
  /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h \
- motors_controller.h collision_manager.h role_selector.h \
- ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h
+ motors_controller.h collision_manager.h role_selector.h
 
 ../../lib/e-puck2_main-processor/ChibiOS//os/rt/include/ch.h:
 
@@ -428,5 +427,3 @@ motors_controller.h:
 collision_manager.h:
 
 role_selector.h:
-
-../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h:

@@ -9,9 +9,11 @@
 
 #include "role_selector.h"
 
-#define IS_GOALKEEPER(selector_position) (selector_position >= 0x03 && selector_position <= 0x05)
-#define IS_SMART(selector_position) (selector_position >= 0x06 && selector_position <= 0x0A)
-#define IS_ATTACKER(selector_position) (selector_position >= 0x0B && selector_position <= 0x0D)
+//with the selector it is possible to change the role of the epuck
+#define IS_GOALKEEPER(selector_position) (selector_position >= 0x03 && selector_position <= 0x05) //the 3 back positions (3,4,5) will choose the goalkeeper
+#define IS_SMART(selector_position) (selector_position >= 0x06 && selector_position <= 0x0A) //the 5 left positions (6,7,8,9,A) will choose the smart player
+#define IS_ATTACKER(selector_position) (selector_position >= 0x0B && selector_position <= 0x0D) //the 3 front positions (B,C,D) will choose the attacker
+//otherwise, the 5 right position will choose the controlled player
 
 static enum Role epuck_role = SMART;
 
@@ -44,5 +46,5 @@ enum Role get_role(void){
 }
 
 void role_selector_start(void){
-	chThdCreateStatic(waSelectRole, sizeof(waSelectRole), NORMALPRIO-1, SelectRole, NULL);
+	chThdCreateStatic(waSelectRole, sizeof(waSelectRole), NORMALPRIO+1, SelectRole, NULL);
 }

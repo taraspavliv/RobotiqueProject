@@ -7,11 +7,10 @@
 #ifndef COLLISION_MANAGER_H
 #define COLLISION_MANAGER_H
 
-uint8_t update_IR_sensors(bool* IR_sensors, uint8_t* ext_active_sensors_idx); /*returns the number of active IR sensors. ext_active_sensors_idx gets the indexes
-of the most external active IR sensors (min active index, max active index). If only one active sensor, min active index = max active index*/
-bool intermediate_inside_field(int16_t* point);
-void set_avoid_collision(bool avoid_param);
+void set_avoid_collision(bool avoid_param); //we can set to false when we don't want to avoid objects, for example when shooting the ball
 
-void collision_manager_start(void);
+void collision_manager_start(void); //starts the thread that manages the IR sensors
+
+bool object_right_in_front(void); //returns true if the 2 most front IR sensors see something
 
 #endif /* COLLISION_MANAGER_H */

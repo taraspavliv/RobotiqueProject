@@ -9,7 +9,8 @@
 
 enum Role{GOALKEEPER, ATTACKER, SMART, CONTROLLED};
 
-void role_selector_start(void);
-enum Role get_role(void);
+void role_selector_start(void); //starts the thread for the selector
+enum Role get_role(void); //returns the role based on the selector position
+
 
 #endif /* ROLE_SELECTOR_H_ */
