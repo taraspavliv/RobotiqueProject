@@ -143,7 +143,21 @@ build/obj/position_calibrator.o: position_calibrator.c \
  ../../lib/e-puck2_main-processor/ChibiOS//os/hal/lib/streams/chprintf.h \
  ../../lib/e-puck2_main-processor/src/i2c_bus.h \
  ../../lib/e-puck2_main-processor/src/usbcfg.h motors_controller.h \
- ../../lib/e-puck2_main-processor/src/motors.h
+ ../../lib/e-puck2_main-processor/src/motors.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/stdlib.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/stdlib.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/alloca.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h \
+ main.h ../../lib/e-puck2_main-processor/src/camera/dcmi_camera.h \
+ ../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/dcmi.h \
+ ../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/../ports/STM32/STM32F4xx/dcmi_lld.h \
+ ../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/../ports/STM32/STM32F4xx/stm32_registry.h \
+ ../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/../ports/STM32/STM32F4xx/stm32_rcc.h \
+ ../../lib/e-puck2_main-processor/src/camera/po8030.h \
+ ../../lib/e-puck2_main-processor/src/msgbus/messagebus.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/unistd.h \
+ /home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/unistd.h \
+ ../../lib/e-puck2_main-processor/src/parameter/parameter.h
 
 position_calibrator.h:
 
@@ -438,3 +452,33 @@ mcuconf.h:
 motors_controller.h:
 
 ../../lib/e-puck2_main-processor/src/motors.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/stdlib.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/stdlib.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/alloca.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/math.h:
+
+main.h:
+
+../../lib/e-puck2_main-processor/src/camera/dcmi_camera.h:
+
+../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/dcmi.h:
+
+../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/../ports/STM32/STM32F4xx/dcmi_lld.h:
+
+../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/../ports/STM32/STM32F4xx/stm32_registry.h:
+
+../../lib/e-puck2_main-processor/ChibiOS_ext/os/hal/include/../ports/STM32/STM32F4xx/stm32_rcc.h:
+
+../../lib/e-puck2_main-processor/src/camera/po8030.h:
+
+../../lib/e-puck2_main-processor/src/msgbus/messagebus.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/unistd.h:
+
+/home/taras/Documents/EPFL/Robotique/TP/eclipse/Eclipse_e-puck2/Tools/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/unistd.h:
+
+../../lib/e-puck2_main-processor/src/parameter/parameter.h:

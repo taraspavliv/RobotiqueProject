@@ -26,7 +26,7 @@
 #define DIRECTION_COARSE_TUNE_SPEED 400
 #define DIRECTION_FINE_TUNE_SPEED 50
 
-#define POSITION_PRECISION 2 //unit: mm
+#define POSITION_PRECISION 3 //unit: mm
 #define POSITION_SPEED_FINE_THRESHOL 5 //unit: mm
 #define POSITION_COARSE_TUNE_SPEED 880
 #define POSITION_FINE_TUNE_SPEED 50
@@ -64,10 +64,7 @@ static THD_FUNCTION(MotorsControl, arg) {
 
   float angle_variation_temp = 0;
 
-  float angle_difference = 0;
-  float position_difference = 0;
 
-  float angle_regulator = 0;
 
   while(true) {
 	 //estimates the epuck position
@@ -89,8 +86,8 @@ static THD_FUNCTION(MotorsControl, arg) {
 
 	 //handles objectives achievement
 	 if(angle_obj_ach == false){ //TODO restructurate the code
-		 angle_difference = get_angle_difference(my_angle, angle_objective);
-		 //chprintf((BaseSequentialStream *) &SDU1, "pos_dif:%f- \n\r", angle_difference);
+		 angle_obj_ach = manage_angle(angle_objective);
+		 /*angle_difference = get_angle_difference(my_angle, angle_objective);
 		 if(abs(angle_difference) < DIRECTION_PRECISION){
 			 angle_obj_ach = true;
 			 left_motor_set_speed(0);
@@ -113,9 +110,10 @@ static THD_FUNCTION(MotorsControl, arg) {
 					 right_motor_set_speed((int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
 				 }
 			 }
-		 }
+		 }*/
 	 }else if(interm_ach == false){
-		 position_difference = get_position_difference(my_position, intermediate_position);
+		 interm_ach = manage_position(intermediate_position);
+		 /*position_difference = get_position_difference(my_position, intermediate_position);
 		 if(abs(position_difference) < POSITION_PRECISION){
 			 interm_ach = true;
 			 left_motor_set_speed(0);
@@ -139,10 +137,10 @@ static THD_FUNCTION(MotorsControl, arg) {
 					 right_motor_set_speed(-(int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
 				 }
 			 }
-		 }
+		 }*/
 	 }else if(pos_obj_ach == false){
-		 position_difference = get_position_difference(my_position, position_objective);
-		 //chprintf((BaseSequentialStream *) &SDU1, "pos_dif:%f- \n\r", position_difference);
+		 pos_obj_ach = manage_position(position_objective);
+		 /*position_difference = get_position_difference(my_position, position_objective);
 		 if(abs(position_difference) < POSITION_PRECISION){
 			 pos_obj_ach = true;
 			 left_motor_set_speed(0);
@@ -167,11 +165,72 @@ static THD_FUNCTION(MotorsControl, arg) {
 					 right_motor_set_speed(-(int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
 				 }
 			 }
-		 }
+		 }*/
 	 }
 
 	 chThdSleepMilliseconds(20); //50Hz
   }
+}
+
+bool manage_angle(float angle_objective){
+	 float angle_difference = 0;
+	 angle_difference = get_angle_difference(my_angle, angle_objective);
+
+	 if(abs(angle_difference) < DIRECTION_PRECISION){
+		 left_motor_set_speed(0);
+		 right_motor_set_speed(0);
+		 return true;
+	 }else{
+		 if(angle_difference > 0){
+			 if(angle_difference > DIRECTION_SPEED_FINE_THRESHOL){
+				 left_motor_set_speed(DIRECTION_COARSE_TUNE_SPEED);
+				 right_motor_set_speed(-DIRECTION_COARSE_TUNE_SPEED);
+			 }else{
+				 left_motor_set_speed((int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
+				 right_motor_set_speed(-(int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
+			 }
+		 }else{
+			 if(angle_difference < -DIRECTION_SPEED_FINE_THRESHOL){
+				 left_motor_set_speed(-DIRECTION_COARSE_TUNE_SPEED);
+				 right_motor_set_speed(DIRECTION_COARSE_TUNE_SPEED);
+			 }else{
+				 left_motor_set_speed(-(int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
+				 right_motor_set_speed((int16_t)(DIRECTION_COARSE_TUNE_SPEED*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)*(angle_difference/DIRECTION_SPEED_FINE_THRESHOL)));
+			 }
+		 }
+		 return false;
+	 }
+}
+
+bool manage_position(float* position_objective){
+	float position_difference = 0;
+	position_difference = get_position_difference(my_position, position_objective);
+	if(abs(position_difference) < POSITION_PRECISION){
+		left_motor_set_speed(0);
+		right_motor_set_speed(0);
+		return true;
+	}else{
+		float angle_regulator = 0;
+		angle_regulator = get_angle_difference(my_angle, RAD_TO_DEG(atan2f(position_objective[1]-my_position[1], position_objective[0]-my_position[0])));
+		if(position_difference > 0){
+			if(position_difference > POSITION_SPEED_FINE_THRESHOL){
+				left_motor_set_speed(POSITION_COARSE_TUNE_SPEED + KP*angle_regulator);
+				right_motor_set_speed(POSITION_COARSE_TUNE_SPEED - KP*angle_regulator);
+			}else{
+				left_motor_set_speed((int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+				right_motor_set_speed((int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+			}
+		}else{
+			if(position_difference < -POSITION_SPEED_FINE_THRESHOL){
+				left_motor_set_speed(-POSITION_COARSE_TUNE_SPEED - KP*angle_regulator);
+				right_motor_set_speed(-POSITION_COARSE_TUNE_SPEED + KP*angle_regulator);
+			}else{
+				left_motor_set_speed(-(int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+				right_motor_set_speed(-(int16_t)(POSITION_COARSE_TUNE_SPEED*(position_difference/POSITION_SPEED_FINE_THRESHOL)*(position_difference/POSITION_SPEED_FINE_THRESHOL)));
+			}
+		}
+		return false;
+	}
 }
 
 int16_t* get_self_position(void){
@@ -237,6 +296,12 @@ void continue_main_obj(void){
 }
 
 float get_angle_difference(float angle1,float angle2){
+	if(angle2 < 0){
+		angle2 += 360;
+	}
+	if(angle1 < 0){
+		angle1 += 360;
+	}
 	if(abs(angle1-angle2) < abs(fmod(angle1+180,360) - fmod(angle2+180,360)) ){
 		return angle1 - angle2;
 	}else{

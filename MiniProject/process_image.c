@@ -68,7 +68,7 @@ static THD_FUNCTION(ProcessImage, arg) {
     (void)arg;
 
 	uint8_t *img_buff_ptr;
-	uint8_t main_lines_averaged[PO8030_MAX_WIDTH] = {0}; //TODO: static?
+	uint8_t main_lines_averaged[PO8030_MAX_WIDTH] = {0};
 
 	uint16_t left_ball_side = 0;
 	uint16_t right_ball_side = 0;
@@ -84,10 +84,8 @@ static THD_FUNCTION(ProcessImage, arg) {
 		// estimates the ball position by checking for black pixels
 		ball_seen = first_ball_estimate(img_buff_ptr, main_lines_averaged, &left_ball_side, &right_ball_side);
 		if(ball_seen){
-			//chprintf((BaseSequentialStream *) &SD3, "l:%d r:%d ", left_ball_side, right_ball_side);
 			//better estimate by doing edge detection
 			final_ball_estimate(main_lines_averaged, &left_ball_side, &right_ball_side);
-			//chprintf((BaseSequentialStream *) &SD3, "le:%d re:%d ", left_ball_side, right_ball_side);
 			//estimates ball position based on self position and angle + ball apperance on the camera
 			update_ball_pos_mov(left_ball_side, right_ball_side);
 		}else{
@@ -159,6 +157,8 @@ void final_ball_estimate(uint8_t* main_lines_averaged, uint16_t* left_ball_side_
 void update_ball_pos_mov(uint16_t left_ball_side, uint16_t right_ball_side){
 	if(left_ball_side <= BALL_AOV_MARGIN || right_ball_side >= PO8030_MAX_WIDTH - 1 - BALL_AOV_MARGIN){
 		ball_visibility = PARTIAL;
+	}else if(left_ball_side <= BALL_AOV_MARGIN && right_ball_side >= PO8030_MAX_WIDTH - 1 - BALL_AOV_MARGIN){
+		ball_visibility = CAM_OVERFLOW;
 	}else if(right_ball_side - left_ball_side < MINIMUM_BALL_SIZE){
 		ball_visibility = NONE;
 	}else{

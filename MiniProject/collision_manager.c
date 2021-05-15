@@ -19,8 +19,8 @@
 //TODO
 #include <chprintf.h>
 
-#define CLOSE_THRS 20
-#define INTERMEDIATE_POINT_DIST 50 // in mm
+#define CLOSE_THRS 100
+#define INTERMEDIATE_POINT_DIST 40 // in mm
 #define ANGLE_BETWEEN_SENSORS 36 //in deg
 #define FRONT_SENSORS 6
 
@@ -52,15 +52,14 @@ static THD_FUNCTION(CollisionManager, arg) {
 
 	while(true) {
 		messagebus_topic_wait(prox_topic, &prox_values, sizeof(prox_values));
+		//chprintf((BaseSequentialStream *) &SD3, "0:%d 1:%d\r\n", get_calibrated_prox(0), get_calibrated_prox(7));
 
 		if(get_position_achieved() == false && get_angle_achieved() == true && avoid_collision == true){
 			active_sensors = update_IR_sensors(IR_active, edge_active_sensors);
-			//chprintf((BaseSequentialStream *) &SD3, "0:%d 1:%d 2:%d 3:%d 4:%d 5:%d \r\n", IR_active[0], IR_active[1], IR_active[2], IR_active[3], IR_active[4], IR_active[5]);
 
 			switch(ir_state) {
 			case LOOK_AROUND:{
 				if(active_sensors == 1){ //look only for 1-4 active
-					//set_angle_obj(get_angle_obj()+90);//or -90, depending on what is closest to objective
 					if(edge_active_sensors[0] != 0 && edge_active_sensors[0] != FRONT_SENSORS-1){
 						angle_to_candidate = get_self_angle() - 90 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS + 90;
 						candidate_inter_point_1[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);

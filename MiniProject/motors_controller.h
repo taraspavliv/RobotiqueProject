@@ -14,11 +14,15 @@
 
 void motors_controller_start(void);
 
+bool manage_angle(float angle_objective);
+bool manage_position(float* position_objective);
+
 int16_t* get_self_position(void);
 int16_t get_self_angle(void);
 
 void set_angle_obj(uint16_t angle);
 void set_position_obj(int16_t* position);
+void set_distance_forward(float distance);
 void set_rotation_speed(uint16_t speed, bool clockwise);
 void set_intermediate_point(int16_t* position);
 

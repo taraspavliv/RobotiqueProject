@@ -1,0 +1,14 @@
+Data in:
+"a:" controller angle
+"d:" controller distance (controls speed)
+"u:" enemy position x
+"v:" enemy position y
+"h" shoot
+"c" calibrate
+"-" end of command
+
+Data out:
+"x:" self position x
+"y:" self position y
+
+

@@ -25,14 +25,19 @@
 
 #define GOAL_WIDTH 300 //in mm
 #define EPUCK_DIAMETER 80 //in mm
-#define KEEPER_Y_MARGIN 10 //in mm
+#define KEEPER_Y_MARGIN 30 //in mm
+#define K1 2000.
+#define K2 1000.
+#define K3 0.3333333
+#define K4 100.
 
 #define KEEPER_LEFT 160 //camera angle of view is 45 deg, so by turning to 160 should be able to see up to 180
 #define KEEPER_RIGHT 20
 #define KEEPER_INTERCEPT_THRS 9 //in mm^2*s^-2, we already square 3mm/s for optimisation
 #define KEEPER_MIN_MOVE 10 //in mm, if less than this value, the epuck won't move
 
-#define ATTACKER_DISTANCE_TO_CHARGE_BALL 120 //in mm
+#define ATTACKER_DISTANCE_TO_CHARGE_BALL 100 //in mm
+#define ATTACKER_MIN_FOCUS_ANGLE 5 //in deg
 
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
@@ -89,64 +94,78 @@ int main(void)
 
 
 	//set_rgb_led(1,200,200,0);
-    /* Infinite loop. */
+
 	enum Role my_role = SMART;
 	bool smart_attacking = true; //if true, the epuck plays as an attacker, if false he plays as goalkeeper
 	bool role_changed = false;
 	bool smart_role_changed = false;
+	bool calibrate_command_called = false;
+	bool should_calibrate=true;
 
-	bool test_command_sent = false; //TODO:remove
-	uint16_t posititon_test[2] = {0};
-	posititon_test[0] = 400;
-	posititon_test[1] = 200;
     while (true) {
-
-    	role_changed = (my_role != get_role());
-    	my_role = get_role();
-
-    	switch(my_role){
-    	case ATTACKER:{
-    		attack_FSM(role_changed);
-    		break;
-    	}
-    	case GOALKEEPER:{
-    		keeper_FSM(role_changed);
-    		break;
-    	}
-    	case CONTROLLED:{
-    		bt_control();
-    		break;
-    	}
-    	case SMART:{
-    		//if sees the ball, decides if it's better to attack or defend
-    		if(get_ball_visibility() == FULL){
-    			int16_t self_attacking_score = 0;
-    			int16_t enemy_goal_center_point[2]= {0};
-    			enemy_goal_center_point[0] = FIELD_WIDTH/2;
-    			enemy_goal_center_point[1] = FIELD_HEIGHT;
-    			self_attacking_score = attacking_score(get_self_position(), get_ball_position(), enemy_goal_center_point);
-
-    			//from the enemy point of view, we should transform the coordinates of the ball
-    			int16_t enemy_attacking_score = 0;
-    			int16_t ball_in_enemy_coordinates[2] = {0};
-    			ball_in_enemy_coordinates[0] = FIELD_WIDTH - get_ball_position()[0];
-    			ball_in_enemy_coordinates[1] = FIELD_HEIGHT - get_ball_position()[1];
-    			enemy_attacking_score = attacking_score(get_BT_enemy_position(), ball_in_enemy_coordinates, enemy_goal_center_point);
-
-    			smart_role_changed = (smart_attacking == (self_attacking_score > enemy_attacking_score)); //if it was smart attacking and still is, role unchanged
-    			smart_attacking = self_attacking_score > enemy_attacking_score;
+    	if (should_calibrate){
+    		if(calibrate_command_called==false){
+    			calibrate();
+    			calibrate_command_called = true;
+    		}else if(get_is_calibrating()==false){
+    			calibrate_command_called= false;
+    			should_calibrate=false;
     		}
-    		if(smart_attacking){
-    			attack_FSM(smart_role_changed);
-    			smart_role_changed = false;
-    		}else{
-    			keeper_FSM(smart_role_changed);
-    			smart_role_changed = false;
-    		}
-    		break;
+    	}else{
+    		role_changed = (my_role != get_role());
+			my_role = get_role();
+
+			switch(my_role){
+			case ATTACKER:{
+				set_avoid_collision(true);
+				attack_FSM(role_changed);
+				break;
+			}
+			case GOALKEEPER:{
+				set_avoid_collision(false);
+				keeper_FSM(role_changed);
+				break;
+			}
+			case CONTROLLED:{
+				set_avoid_collision(false);
+				bt_control();
+				break;
+			}
+			case SMART:{
+				//if sees the ball, decides if it's better to attack or defend
+				if(get_ball_visibility() == FULL){
+					int16_t self_attacking_score = 0;
+					int16_t enemy_goal_center_point[2]= {0};
+					enemy_goal_center_point[0] = FIELD_WIDTH/2;
+					enemy_goal_center_point[1] = FIELD_HEIGHT;
+					self_attacking_score = attacking_score(get_self_position(), get_ball_position(), enemy_goal_center_point);
+
+					//from the enemy point of view, we should transform the coordinates of the ball
+					int16_t enemy_attacking_score = 0;
+					int16_t ball_in_enemy_coordinates[2] = {0};
+					ball_in_enemy_coordinates[0] = FIELD_WIDTH - get_ball_position()[0];
+					ball_in_enemy_coordinates[1] = FIELD_HEIGHT - get_ball_position()[1];
+					enemy_attacking_score = attacking_score(get_BT_enemy_position(), ball_in_enemy_coordinates, enemy_goal_center_point);
+
+					smart_role_changed = (smart_attacking == (self_attacking_score > enemy_attacking_score)); //if it was smart attacking and still is, role unchanged
+					smart_attacking = self_attacking_score > enemy_attacking_score;
+				}
+				if(smart_attacking){
+					set_avoid_collision(true);
+					attack_FSM(smart_role_changed);
+					smart_role_changed = false;
+				}else{
+					set_avoid_collision(false);
+					keeper_FSM(smart_role_changed);
+					smart_role_changed = false;
+				}
+				break;
+			}
+			default: break;
+			}
     	}
-    	default: break;
-    	}
+
+
 
         chThdSleepMilliseconds(30);
     }
@@ -198,7 +217,7 @@ void keeper_FSM(bool role_changed){
 		break;
 	}
 	case K_SCANNING:{
-		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
+		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL || get_ball_visibility() == CAM_OVERFLOW){
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[1]));
 			if(angle_to_ball < 0){
@@ -244,7 +263,7 @@ void keeper_FSM(bool role_changed){
 			}
 		}else if(get_ball_visibility() == NONE){
 			goalkeeper_state = K_SCANNING;
-		}
+		} //else if get_ball_visibility() == CAM_OVERFLOW, does nothing
 		break;
 	}
 	case INTERCEPTING:{
@@ -256,7 +275,7 @@ void keeper_FSM(bool role_changed){
 	}
 	case K_REFOCUSING:{
 		if(get_angle_achieved()){
-			if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
+			if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL || get_ball_visibility() == CAM_OVERFLOW){
 				goalkeeper_state = K_FOCUSING;
 			}else if(get_ball_visibility() == NONE){
 				goalkeeper_state = K_SCANNING;
@@ -276,8 +295,6 @@ void attack_FSM(bool role_changed){
 		set_rotation_speed(880, false);
 		attacker_state = A_SCANNING;
 	}
-	//static bool scanning_left = true; //false-> scanning right
-	//static int16_t refocus_angle = 0;
 
 	static int16_t attack_position[2]={0,0};
 	static int16_t refocus_angle = 0;
@@ -286,10 +303,11 @@ void attack_FSM(bool role_changed){
 	set_led(1, attacker_state == A_FOCUSING);
 	set_led(2, attacker_state == A_POSITIONING);
 	set_led(3, attacker_state == A_REFOCUSING);
+	//set_led(2, get_ball_visibility() == CAM_OVERFLOW);
 
 	switch(attacker_state){
 	case A_SCANNING:{
-		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL){
+		if(get_ball_visibility() == FULL || get_ball_visibility() == PARTIAL || get_ball_visibility() == CAM_OVERFLOW){
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
 			if(angle_to_ball < 0){
@@ -308,10 +326,10 @@ void attack_FSM(bool role_changed){
 				refocus_angle += 360;
 			}
 
-			attack_position[0] = get_ball_position()[0] - cosf(DEG_TO_RAD(refocus_angle))*ATTACKER_DISTANCE_TO_CHARGE_BALL;
-			attack_position[1] = get_ball_position()[1] - sinf(DEG_TO_RAD(refocus_angle))*ATTACKER_DISTANCE_TO_CHARGE_BALL;
+			attack_position[0] = get_ball_position()[0] - (int16_t)(cosf(DEG_TO_RAD(refocus_angle))*ATTACKER_DISTANCE_TO_CHARGE_BALL);
+			attack_position[1] = get_ball_position()[1] - (int16_t)(sinf(DEG_TO_RAD(refocus_angle))*ATTACKER_DISTANCE_TO_CHARGE_BALL);
 
-			if(attack_position[0]<=40){
+			/*if(attack_position[0]<=40){
 				attack_position[0]=40;
 				refocus_angle=90;
 			}else if(attack_position[0]>=560){
@@ -324,20 +342,26 @@ void attack_FSM(bool role_changed){
 			}else if(attack_position[1]>=960){
 				attack_position[1]=960;
 				refocus_angle=0;
-			}
+			}*/
 			set_position_obj(attack_position);
 			attacker_state = A_POSITIONING;
 		}else if(get_ball_visibility() == NONE ){
 			set_rotation_speed(880, false);
 			attacker_state = A_SCANNING;
 		}else if(get_ball_visibility() == PARTIAL){
+			if( get_calibrated_prox(0)>10 && get_calibrated_prox(7)>10){ //TODO make a function
+				attacker_state= SHOOTING;
+			}
 			float angle_to_ball = 0.0;
 			angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
 			if(angle_to_ball < 0){
 				angle_to_ball += 360;
 			}
+
 			set_angle_obj(angle_to_ball);
 
+		}else if(get_ball_visibility() == CAM_OVERFLOW){
+			set_distance_forward(-20);
 		}
 		break;
 	}
@@ -350,10 +374,9 @@ void attack_FSM(bool role_changed){
 	}
 	case A_REFOCUSING:{
 		if(get_angle_achieved()){
-			if(get_ball_visibility() == FULL){
+			if(get_ball_visibility() == FULL || get_ball_visibility() == CAM_OVERFLOW || get_ball_visibility() == PARTIAL){//full, changed to partial to run test
 				attacker_state = SHOOTING;
-			}
-			if(get_ball_visibility() == PARTIAL){
+			}/*else if(get_ball_visibility() == PARTIAL){//was partial, changed to run test
 				float angle_to_ball = 0.0;
 				angle_to_ball = RAD_TO_DEG(atan2f(get_ball_position()[1] - get_self_position()[1], get_ball_position()[0] - get_self_position()[0]));
 				if(angle_to_ball < 0){
@@ -361,8 +384,7 @@ void attack_FSM(bool role_changed){
 				}
 				set_angle_obj(angle_to_ball);
 				attacker_state = A_FOCUSING;
-			}
-			if(get_ball_visibility() == NONE){
+			}*/else if(get_ball_visibility() == NONE){
 				set_rotation_speed(880, false);
 				attacker_state = A_SCANNING;
 			}
@@ -370,9 +392,11 @@ void attack_FSM(bool role_changed){
 		break;
 	}
 	case SHOOTING:{
+		set_avoid_collision(false);
 		motor_shoot();
 		chThdSleepMilliseconds(900);
 		reset_motor_shoot();
+		set_avoid_collision(true);
 		attacker_state= A_FOCUSING;
 		break;
 	}
@@ -380,10 +404,6 @@ void attack_FSM(bool role_changed){
 	}
 }
 
-#define K1 2000.
-#define K2 1000.
-#define K3 0.3333333
-#define K4 100.
 
 int16_t attacking_score(int16_t* player_pos, int16_t* ball_pos, int16_t* goal_pos){
 	//these functions where found with a simulation to get an attacking score that "seems" right, don't overthink it
