@@ -21,6 +21,8 @@ class BTDevice{
   int ctrlAngle = 0;
   int ctrlDist = 0;
   bool ctrlHit = false;
+  bool calibrate = false;
+  Timer periodicCalib;
   Timer periodicCtrl;
   int positionX = 0;
   int positionY = 0;
@@ -35,9 +37,14 @@ class BTDevice{
     this.deviceStatus = Status.paired;
     this.bluedevice = bluedevice;
     //this.deviceName = deviceName;
-    periodicCtrl = Timer.periodic(Duration(milliseconds: 100), (timer) {
+    periodicCtrl = Timer.periodic(Duration(milliseconds: 70), (timer) {
       if(this.deviceStatus == Status.connected || this.deviceStatus == Status.controlled){
         sendCtrlData();
+      }
+    });
+    Timer.periodic(Duration(seconds: 120), (timer) {
+      if(this.deviceStatus == Status.connected || this.deviceStatus == Status.controlled){
+        this.calibrate = true;
       }
     });
   }
@@ -67,6 +74,7 @@ class BTDevice{
         }
 
       });
+
     }).catchError((error) {
       print('Cannot connect, exception occured');
       print(error);
@@ -96,7 +104,7 @@ class BTDevice{
       }
     }
     var decoded = utf8.decode(buffer);
-    print("recieved:$decoded");
+    //print("recieved:$decoded");
 
     for(int i=0; i<decoded.length; i++) {
       if((decoded[i] == 'x' || decoded[i] == 'y') && decoded[i+1] == ':'){
@@ -112,8 +120,8 @@ class BTDevice{
         }
       }
     }
-    //print("x:$positionX");
-    //print("y:$positionY");
+    print("x:$positionX");
+    print("y:$positionY");
 
   }
 
@@ -140,6 +148,11 @@ class BTDevice{
         ctrlSendString = ctrlSendString + ' h';
       }
     }
+    if(this.calibrate == true){
+      this.calibrate = false;
+      ctrlSendString = ctrlSendString + ' c';
+      print('calibrate');
+    }
     if(this.numPlayer == 0 && globals.connectedDevices == 2){
       ctrlSendString = ctrlSendString + ' u:${globals.player1.positionX} v:${globals.player1.positionY}';
     }else if(this.numPlayer == 1){
@@ -147,8 +160,8 @@ class BTDevice{
     }
     ctrlSendString =  ctrlSendString + ' -';
     _sendMessage(ctrlSendString);
-    numPlayer == 0? print("player0"):print("player1");
-    print(ctrlSendString);
+    //numPlayer == 0? print("player0"):print("player1");
+    //print(ctrlSendString);
   }
 
 }
@@ -226,7 +239,7 @@ class _DeviceCardState extends State<DeviceCard> {
                       }
                       widget.device._getBTConnection();
                       globals.connectedDevices = globals.connectedDevices + 1;
-                      print("${globals.connectedDevices}");
+                      //print("${globals.connectedDevices}");
                       setState(() {});
                       widget.device.deviceStatus = Status.connected;
                     }
@@ -235,7 +248,7 @@ class _DeviceCardState extends State<DeviceCard> {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => Controller(widget.device.numPlayer)/*widget.device.numPlayer == 0? Controller(globals.player0): Controller(globals.player1)*/,
+                          builder: (context) => Controller(widget.device.numPlayer),
                         ));
                     widget.device.deviceStatus = Status.controlled;
                   }

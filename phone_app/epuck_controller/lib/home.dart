@@ -155,14 +155,16 @@ class _HomeState extends State<Home> with WidgetsBindingObserver{
           onPressed: (){
             BTdevices.clear();
             for(int i=0; i < AVdevices.length; ++i){
+              //prints all paired devices
               AVdevices[i].availability =_DeviceAvailability.maybe;
+              BTdevices.add(BTDevice(AVdevices[i].device));
             }
             setState(() {});
-            _restartDiscovery();
+            //_restartDiscovery();
               //_listBondedDevices();
             if(_bluetoothState.isEnabled){
               print("bluetooth enabled");
-              print(AVdevices.length);
+              //print(AVdevices.length);
               for(int i=0; i < AVdevices.length; ++i){
                 AVdevices[i].availability ==_DeviceAvailability.yes? print("${AVdevices[i].device.name}") : print("oh no");
               }
