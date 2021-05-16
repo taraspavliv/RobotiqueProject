@@ -12,5 +12,5 @@ Configurations can be tested as follows:
 -The human player can be moved with arrows and space bar for boosts
 -The ball (white circle) can be shooted by collision
 
-By playing around a bit, we have tested that this attacking score looks like a good way to decide when to attack or defend. However the code of attacking and defending isn't finished because it would take a long time to code and wouldn't give a lot of information (it moves but is sometimes a bit random).
+By playing around a bit, we have tested that this attacking score looks like a good way to decide when to attack or defend. However the code of attacking and defending isn't done because it would take a long time to code and wouldn't give a lot of information.
 The collisions of the players with the ball is also a bit bugged, but good enough for a simulation :)

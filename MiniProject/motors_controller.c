@@ -186,6 +186,13 @@ bool get_position_achieved(void){
 	return pos_obj_ach;
 }
 
+int16_t* get_position_objective(void){
+    static int16_t position_in_int[2] = {0};
+    position_in_int[0] = (int16_t)position_objective[0];
+    position_in_int[1] = (int16_t)position_objective[1];
+    return position_in_int;
+}
+
 //setters for objectives
 void set_angle_obj(uint16_t angle){
 	angle_obj_ach = false;

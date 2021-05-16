@@ -20,9 +20,9 @@
 #define CLOSE_THRS 100 //if IR value larger than this, we set is as an "active sensor"
 #define CLOSE_IN_FRONT_THRS 15 //if both front sensors see more than this value, there is an object right in front of the robot
 #define INTERMEDIATE_POINT_DIST 40 // in mm
+#define CLOSE_TO_OBJ_THRS 60 //in mm, if closer than this and object in front, the robot acts as if objectif point was achieved
 #define ANGLE_BETWEEN_SENSORS 36 //in degrees
 #define FRONT_SENSORS 6
-#define SMALL_TURN 5 //adds 5 degrees until he can find valid candidates
 #define RELATIVE_ANGLE_SENSOR_0 (-90) // IR_active[0] is -90 degrees to the angle of the robot
 
 bool intermediate_inside_field(int16_t* point); //returns true if the point is inside the field (FIELD_WIDTH and FIELD_HEIGHT are defined in main.h)
@@ -67,68 +67,74 @@ static THD_FUNCTION(CollisionManager, arg) {
 				//if active sensors, we find two candidates for an intermediate point and choose the best one. Then we go to this point before continuing to the main objective
 				if(active_sensors == 1){
 					if(edge_active_sensors[0] != 0 && edge_active_sensors[0] != FRONT_SENSORS-1){ //look only for 1-4 active, 0 and FRONT_SENSORS-1 would mean there is an obstacle on the side, which doesn't bother
-						//calculates the 2 candidates for intermediate points
-						angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS + PERP;
-						candidate_inter_point_1[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
-						candidate_inter_point_1[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+						if(distance_to_point(get_position_objective()) <= CLOSE_TO_OBJ_THRS){ //if close enough to objective, won't try to go further
+							set_position_obj(get_self_position());
+						}else{
+							//calculates the 2 candidates for intermediate points
+							angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS + PERP;
+							candidate_inter_point_1[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+							candidate_inter_point_1[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
 
-						angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS - PERP;
-						candidate_inter_point_2[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
-						candidate_inter_point_2[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
-						//chooses the best candidate
-						if(intermediate_inside_field(candidate_inter_point_1)){
-							if(intermediate_inside_field(candidate_inter_point_2)){
-								if(closest_point_to_obj(candidate_inter_point_1, candidate_inter_point_2) == 1){
+							angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS - PERP;
+							candidate_inter_point_2[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+							candidate_inter_point_2[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+							//chooses the best candidate
+							if(intermediate_inside_field(candidate_inter_point_1)){
+								if(intermediate_inside_field(candidate_inter_point_2)){
+									if(closest_point_to_obj(candidate_inter_point_1, candidate_inter_point_2) == 1){
+										set_intermediate_point(candidate_inter_point_1);
+										ir_state = GOING_TO_INTERMEDIATE;
+									}else{
+										set_intermediate_point(candidate_inter_point_2);
+										ir_state = GOING_TO_INTERMEDIATE;
+									}
+								}else{
 									set_intermediate_point(candidate_inter_point_1);
 									ir_state = GOING_TO_INTERMEDIATE;
-								}else{
-									set_intermediate_point(candidate_inter_point_2);
-									ir_state = GOING_TO_INTERMEDIATE;
 								}
-							}else{
-								set_intermediate_point(candidate_inter_point_1);
+							}else if(intermediate_inside_field(candidate_inter_point_2)){
+								set_intermediate_point(candidate_inter_point_2);
 								ir_state = GOING_TO_INTERMEDIATE;
+							}else{
+								//no candidate is good;
+								set_position_obj(get_self_position());
 							}
-						}else if(intermediate_inside_field(candidate_inter_point_2)){
-							set_intermediate_point(candidate_inter_point_2);
-							ir_state = GOING_TO_INTERMEDIATE;
-						}else{
-							//no candidate is good;
-							set_angle_obj(get_self_angle() + SMALL_TURN);
-							//turn until good
 						}
 					}
 				}else if(active_sensors > 1){
 					if(!(active_sensors == 2 && edge_active_sensors[0] == 0 && edge_active_sensors[1] == FRONT_SENSORS-1)){
-						//calculates the 2 candidates for intermediate points
-						angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS - PERP;
-						candidate_inter_point_1[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
-						candidate_inter_point_1[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+						if(distance_to_point(get_position_objective()) <= CLOSE_TO_OBJ_THRS){ //if close enough to objective, won't try to go further
+							set_position_obj(get_self_position());
+						}else{
+							//calculates the 2 candidates for intermediate points
+							angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[0]*ANGLE_BETWEEN_SENSORS - PERP;
+							candidate_inter_point_1[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+							candidate_inter_point_1[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
 
-						angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[1]*ANGLE_BETWEEN_SENSORS + PERP;
-						candidate_inter_point_2[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
-						candidate_inter_point_2[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
-						//chooses the best candidate
-						if(intermediate_inside_field(candidate_inter_point_1)){
-							if(intermediate_inside_field(candidate_inter_point_2)){
-								if(closest_point_to_obj(candidate_inter_point_1, candidate_inter_point_2) == 1){
+							angle_to_candidate = get_self_angle() + RELATIVE_ANGLE_SENSOR_0 + edge_active_sensors[1]*ANGLE_BETWEEN_SENSORS + PERP;
+							candidate_inter_point_2[0] = (int16_t)(get_self_position()[0] + cosf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+							candidate_inter_point_2[1] = (int16_t)(get_self_position()[1] + sinf(DEG_TO_RAD(angle_to_candidate))*INTERMEDIATE_POINT_DIST);
+							//chooses the best candidate
+							if(intermediate_inside_field(candidate_inter_point_1)){
+								if(intermediate_inside_field(candidate_inter_point_2)){
+									if(closest_point_to_obj(candidate_inter_point_1, candidate_inter_point_2) == 1){
+										set_intermediate_point(candidate_inter_point_1);
+										ir_state = GOING_TO_INTERMEDIATE;
+									}else{
+										set_intermediate_point(candidate_inter_point_2);
+										ir_state = GOING_TO_INTERMEDIATE;
+									}
+								}else{
 									set_intermediate_point(candidate_inter_point_1);
 									ir_state = GOING_TO_INTERMEDIATE;
-								}else{
-									set_intermediate_point(candidate_inter_point_2);
-									ir_state = GOING_TO_INTERMEDIATE;
 								}
-							}else{
-								set_intermediate_point(candidate_inter_point_1);
+							}else if(intermediate_inside_field(candidate_inter_point_2)){
+								set_intermediate_point(candidate_inter_point_2);
 								ir_state = GOING_TO_INTERMEDIATE;
+							}else{
+								//no candidate is good;
+								set_position_obj(get_self_position());
 							}
-						}else if(intermediate_inside_field(candidate_inter_point_2)){
-							set_intermediate_point(candidate_inter_point_2);
-							ir_state = GOING_TO_INTERMEDIATE;
-						}else{
-							//no candidate is good;
-							set_angle_obj(get_self_angle() + SMALL_TURN);
-							//turn until he can find a solution
 						}
 					}
 				} //else no ir is active, so no obstacle in front so no problems
@@ -191,6 +197,11 @@ bool object_right_in_front(void){
 	}else{
 		return false;
 	}
+}
+
+uint16_t distance_to_point(int16_t* point){
+	return (uint16_t)(sqrt( (get_self_position()[0] - point[0])*(get_self_position()[0] - point[0]) +
+							(get_self_position()[1] - point[1])*(get_self_position()[1] - point[1])));
 }
 
 void collision_manager_start(void){

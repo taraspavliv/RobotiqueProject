@@ -98,8 +98,8 @@ int main(void)
 	collision_manager_start(); //for the IR sensors
 
 	enum Role my_role = SMART;
-	bool smart_attacking = true; //if true, the epuck plays as an attacker, if false he plays as goalkeeper
-	bool smart_role_changed = false;
+	bool smart_attacking = false; //if true, the epuck plays as an attacker, if false he plays as goalkeeper
+	bool smart_role_changed = true;
 
 	bool role_changed = false;
 
@@ -152,7 +152,7 @@ int main(void)
 					ball_in_enemy_coordinates[1] = FIELD_HEIGHT - get_ball_position()[1];
 					enemy_attacking_score = attacking_score(get_BT_enemy_position(), ball_in_enemy_coordinates, enemy_goal_center_point);
 
-					smart_role_changed = (smart_attacking == (self_attacking_score > enemy_attacking_score)); //if it was smart attacking and still is, role unchanged
+					smart_role_changed = !(smart_attacking == (self_attacking_score > enemy_attacking_score)); //if it was smart attacking and still is, role unchanged
 					smart_attacking = self_attacking_score > enemy_attacking_score;
 				}
 				if(smart_attacking){
@@ -168,9 +168,8 @@ int main(void)
 			}
 			default: break;
 			}
+			should_calibrate = get_BT_calibrate(); //every 2 minutes, the phone sends a signal to calibrate again.
     	}
-
-
 
         chThdSleepMilliseconds(30);
     }

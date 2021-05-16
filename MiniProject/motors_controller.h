@@ -35,6 +35,7 @@ uint8_t closest_point_to_obj(int16_t* point1, int16_t* point2); //return 1 if ob
 void set_intermediate_point(int16_t* position);
 bool get_intermediate_achieved(void);
 void continue_main_obj(void); //once the intermediate point has been achieved, return to original objective
+int16_t* get_position_objective(void); //if close enough to objective, will say it has achieved it
 
 float get_angle_difference(float angle1,float angle2);
 
